@@ -1,1765 +1,1146 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monte Carlo Simulation Suite</title>
+<title>Monte Carlo Simulation | Model Excellence Suite</title>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
 <style>
-/* ── Reset & Base ─────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-       background: #F1F5F9; color: #1E293B; font-size: 14px; line-height: 1.5; }
-h1 { font-size: 1.4rem; }
-h2 { font-size: 1.15rem; color: #1E3A8A; margin-bottom: 4px; }
-h3 { font-size: 0.95rem; color: #374151; margin-bottom: 8px; font-weight: 600; }
-p  { color: #6B7280; font-size: 0.88rem; margin-bottom: 10px; }
+/* ── Reset ────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:13px;line-height:1.5;color:#1E2836;background:#F0F3F7;}
 
-/* ── Header ─────────────────────────────────────────────────────── */
-.app-header {
-  background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%);
-  color: #fff; padding: 12px 24px;
-  display: flex; align-items: center; gap: 14px;
-  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
-.app-header .icon { font-size: 2rem; }
-.app-header h1 { font-size: 1.25rem; font-weight: 700; }
-.app-header p  { color: #BFDBFE; font-size: 0.78rem; margin: 0; }
-.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.header-right label { color: #BFDBFE; font-size: 0.82rem; }
-.header-right input { padding: 3px 6px; border-radius: 4px; border: 1px solid #93C5FD;
-  background: rgba(255,255,255,.12); color: #fff; width: 70px; font-size: 0.82rem; }
-.scenarios-badge { background: #F59E0B; color: #1E293B; border-radius: 12px;
-  padding: 2px 10px; font-size: 0.78rem; font-weight: 700; }
-
-/* ── Tabs ────────────────────────────────────────────────────────── */
-.tab-nav { background: #fff; border-bottom: 2px solid #DBEAFE;
-  display: flex; padding: 0 16px; gap: 2px; position: sticky; top: 60px; z-index: 90;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow-x: auto; }
-.tab-btn { padding: 10px 18px; border: none; background: none; cursor: pointer;
-  font-size: 0.88rem; font-weight: 500; color: #6B7280; border-bottom: 3px solid transparent;
-  white-space: nowrap; transition: all .15s; }
-.tab-btn:hover { color: #1D4ED8; background: #EFF6FF; }
-.tab-btn.active { color: #1D4ED8; border-bottom-color: #1D4ED8; background: #EFF6FF; font-weight: 600; }
-
-/* ── Main Layout ─────────────────────────────────────────────────── */
-.app-main { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
-.panel { display: none; }
-.panel.active { display: block; }
-
-/* ── Section header ─────────────────────────────────────────────── */
-.sec-hdr { font-size: 0.82rem; font-weight: 700; color: #1D4ED8; text-transform: uppercase;
-  letter-spacing: .05em; border-bottom: 1.5px solid #BFDBFE; padding-bottom: 4px;
-  margin: 16px 0 10px; }
-
-/* ── Cards ────────────────────────────────────────────────────────── */
-.card { background: #fff; border-radius: 10px; padding: 16px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-.input-grid { display: grid; gap: 14px; margin-bottom: 14px; }
-.input-grid.cols-2 { grid-template-columns: 1fr 1fr; }
-.input-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
-.input-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
-@media (max-width: 768px) {
-  .input-grid.cols-2, .input-grid.cols-3, .input-grid.cols-4 { grid-template-columns: 1fr; }
+/* ── Design Tokens ────────────────────────────────────── */
+:root{
+  --navy:#1B3566; --navy-dk:#152D52;
+  --blue:#1578BE; --blue-lt:#EEF6FC; --blue-md:#D6EAF8;
+  --orange:#D4540F; --green:#198754; --red:#C0392B; --amber:#D97706;
+  --white:#FFFFFF; --bg:#F0F3F7;
+  --g50:#F7F9FC; --g100:#E8ECF2; --g200:#CDD4DE;
+  --g400:#8A96A8; --g600:#4C5A6A; --g800:#1E2836;
+  --shadow:0 1px 4px rgba(0,0,0,.09); --shadowM:0 2px 10px rgba(0,0,0,.11);
+  --r:8px;
 }
 
-/* ── Form Controls ───────────────────────────────────────────────── */
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-group label { font-size: 0.8rem; font-weight: 600; color: #374151; }
-.form-group input, .form-group select {
-  padding: 7px 10px; border: 1.5px solid #D1D5DB; border-radius: 6px;
-  font-size: 0.88rem; color: #111827; background: #FAFAFA;
-  transition: border-color .15s; }
-.form-group input:focus, .form-group select:focus {
-  outline: none; border-color: #2563EB; background: #fff; }
-.form-group .hint { font-size: 0.75rem; color: #9CA3AF; }
-.checkbox-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-.checkbox-row input[type=checkbox] { width: 15px; height: 15px; accent-color: #1D4ED8; }
-.radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
-.radio-group label { display: flex; align-items: center; gap: 5px;
-  font-size: 0.85rem; cursor: pointer; font-weight: 500; color: #374151; }
-.radio-group input[type=radio] { accent-color: #1D4ED8; }
+/* ── App Shell ────────────────────────────────────────── */
+.app-shell{display:flex;flex-direction:column;height:100vh;}
 
-/* ── Buttons ─────────────────────────────────────────────────────── */
-.btn { padding: 9px 20px; border-radius: 7px; border: none; cursor: pointer;
-  font-size: 0.88rem; font-weight: 600; transition: all .15s; }
-.btn-primary { background: #1D4ED8; color: #fff; }
-.btn-primary:hover { background: #1E40AF; }
-.btn-primary:active { transform: scale(.98); }
-.btn-secondary { background: #F1F5F9; color: #374151; border: 1.5px solid #D1D5DB; }
-.btn-secondary:hover { background: #E2E8F0; }
-.btn-success { background: #10B981; color: #fff; }
-.btn-success:hover { background: #059669; }
-.btn-danger  { background: #EF4444; color: #fff; }
-.btn-sm { padding: 4px 10px; font-size: 0.78rem; border-radius: 5px; }
-.btn-run { width: 100%; padding: 12px; font-size: 1rem; margin: 12px 0;
-  background: linear-gradient(90deg, #1D4ED8, #7C3AED); color: #fff;
-  border: none; border-radius: 8px; cursor: pointer; font-weight: 700;
-  box-shadow: 0 2px 8px rgba(29,78,216,.3); transition: all .15s; }
-.btn-run:hover { box-shadow: 0 4px 14px rgba(29,78,216,.45); transform: translateY(-1px); }
-.btn-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+/* ── Header ───────────────────────────────────────────── */
+.app-header{
+  height:46px;min-height:46px;background:var(--navy);
+  display:flex;align-items:center;padding:0 20px 0 16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);z-index:100;
+}
+.header-brand{color:#fff;font-size:13px;font-weight:700;letter-spacing:.01em;white-space:nowrap;margin-right:24px;}
+.header-brand span{color:rgba(255,255,255,.45);font-weight:400;}
+.mode-tabs{display:flex;gap:3px;flex:1;}
+.mode-tab{padding:5px 14px;border:none;border-radius:5px;cursor:pointer;font-size:12px;font-weight:500;
+  color:rgba(255,255,255,.6);background:transparent;transition:all .13s;white-space:nowrap;}
+.mode-tab:hover{background:rgba(255,255,255,.10);color:#fff;}
+.mode-tab.active{background:rgba(255,255,255,.18);color:#fff;font-weight:700;}
+.header-right{color:rgba(255,255,255,.45);font-size:11px;white-space:nowrap;margin-left:12px;}
+.header-right strong{color:rgba(255,255,255,.8);}
 
-/* ── KPI strip ───────────────────────────────────────────────────── */
-.kpi-strip { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
-.kpi-card { background: #fff; border-radius: 8px; padding: 10px 16px; flex: 1; min-width: 110px;
-  text-align: center; border-top: 3px solid #1D4ED8;
-  box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-.kpi-card.success { border-top-color: #10B981; }
-.kpi-card.warning { border-top-color: #F59E0B; }
-.kpi-card.danger  { border-top-color: #EF4444; }
-.kpi-value { font-size: 1.35rem; font-weight: 800; color: #1E3A8A; line-height: 1.1; }
-.kpi-label { font-size: 0.72rem; color: #6B7280; text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
+/* ── App Body ─────────────────────────────────────────── */
+.app-body{flex:1;display:flex;overflow:hidden;}
 
-/* ── Result tabs ─────────────────────────────────────────────────── */
-.res-tabs { display: flex; gap: 2px; border-bottom: 2px solid #E5E7EB; margin: 14px 0 0; }
-.res-tab { padding: 7px 16px; border: none; background: none; cursor: pointer;
-  font-size: 0.85rem; color: #6B7280; border-bottom: 2px solid transparent; margin-bottom: -2px;
-  font-weight: 500; border-radius: 6px 6px 0 0; }
-.res-tab:hover { background: #F9FAFB; color: #374151; }
-.res-tab.active { color: #1D4ED8; border-bottom-color: #1D4ED8; background: #EFF6FF; font-weight: 700; }
-.res-content { padding: 14px 0; }
-.res-pane { display: none; }
-.res-pane.active { display: block; }
+/* ── Left Sidebar (Input Fields) ─────────────────────── */
+.input-sidebar{
+  width:252px;min-width:252px;background:var(--white);
+  border-right:1px solid var(--g100);display:flex;flex-direction:column;overflow:hidden;
+}
+.input-panel{display:none;flex-direction:column;height:100%;overflow-y:auto;}
+.input-panel.active{display:flex;}
+.inp-section{padding:14px 16px 0;}
+.inp-label{font-size:10px;font-weight:800;color:var(--blue);text-transform:uppercase;
+  letter-spacing:.08em;padding-bottom:8px;border-bottom:1.5px solid var(--blue-md);margin-bottom:10px;}
+.form-group{margin-bottom:10px;}
+.form-group label{display:block;font-size:10px;font-weight:600;color:var(--g600);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.form-group input,.form-group select{
+  width:100%;padding:6px 9px;border:1.5px solid var(--g200);border-radius:6px;
+  font-size:12.5px;color:var(--g800);background:var(--white);transition:border-color .13s;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,120,190,.10);}
+.form-group .hint{font-size:10px;color:var(--g400);margin-top:3px;}
+.checkbox-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:12px;color:var(--g600);}
+.checkbox-row input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue);}
+.radio-group{display:flex;gap:14px;flex-wrap:wrap;}
+.radio-group label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--g600);font-weight:500;}
+.radio-group input[type=radio]{accent-color:var(--blue);}
+.inp-spacer{flex:1;}
+.inp-footer{padding:12px 16px;border-top:1px solid var(--g100);}
+.btn-run{width:100%;padding:11px;background:var(--blue);color:var(--white);
+  border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;
+  letter-spacing:.01em;transition:background .13s;}
+.btn-run:hover{background:#1062A8;}
+.btn-run:active{transform:scale(.99);}
 
-/* ── Tables ──────────────────────────────────────────────────────── */
-.stats-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-.stats-table th { background: #1E3A8A; color: #fff; padding: 7px 10px; text-align: left;
-  font-size: 0.78rem; font-weight: 600; }
-.stats-table td { padding: 6px 10px; border-bottom: 1px solid #F1F5F9; }
-.stats-table tr:nth-child(even) td { background: #F8FAFC; }
-.stats-table tr:hover td { background: #EFF6FF; }
-.two-col-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 600px) { .two-col-stats { grid-template-columns: 1fr; } }
+/* ── Small Buttons ────────────────────────────────────── */
+.btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:11.5px;font-weight:600;transition:all .12s;}
+.btn-primary{background:var(--blue);color:#fff;}.btn-primary:hover{background:#1062A8;}
+.btn-secondary{background:var(--white);color:var(--g600);border:1.5px solid var(--g200);}.btn-secondary:hover{background:var(--g50);}
+.btn-success{background:var(--green);color:#fff;}.btn-success:hover{background:#157347;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{padding:3px 9px;font-size:11px;border-radius:5px;border:none;cursor:pointer;font-weight:600;}
+.btn-bar{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0;}
+.del-btn{background:#FDDEDE;color:var(--red);border:none;border-radius:5px;padding:3px 8px;cursor:pointer;font-weight:700;font-size:11px;}
+.del-btn:hover{background:#FECACA;}
 
-/* ── Defect / Component editor ───────────────────────────────────── */
-.editor-row { display: grid; gap: 8px; align-items: center; margin-bottom: 6px; padding: 8px;
-  background: #F8FAFC; border-radius: 6px; border: 1px solid #E5E7EB; }
-.editor-row.defect-row { grid-template-columns: 2fr 1fr auto; }
-.editor-row.comp-row   { grid-template-columns: 2fr 1.2fr 1.2fr 1.5fr 1fr auto; }
-.editor-row input, .editor-row select {
-  padding: 5px 8px; border: 1.5px solid #D1D5DB; border-radius: 5px; font-size: 0.83rem; width: 100%; }
-.editor-hdr { display: grid; gap: 8px; padding: 0 8px 4px;
-  font-size: 0.75rem; font-weight: 700; color: #6B7280; text-transform: uppercase; }
-.editor-hdr.defect-hdr { grid-template-columns: 2fr 1fr auto; }
-.editor-hdr.comp-hdr   { grid-template-columns: 2fr 1.2fr 1.2fr 1.5fr 1fr auto; }
-.del-btn { background: #FEE2E2; color: #DC2626; border: none; border-radius: 5px;
-  padding: 4px 8px; cursor: pointer; font-weight: 700; }
-.del-btn:hover { background: #FECACA; }
+/* ── Event / Component editor ─────────────────────────── */
+.editor-tbl{width:100%;border-collapse:collapse;margin-bottom:6px;}
+.editor-tbl th{font-size:9.5px;font-weight:700;color:var(--g400);text-transform:uppercase;
+  letter-spacing:.05em;padding:0 4px 5px;text-align:left;}
+.editor-tbl td{padding:3px 4px;}
+.editor-tbl td input,.editor-tbl td select{width:100%;padding:5px 7px;border:1.5px solid var(--g200);border-radius:5px;font-size:12px;}
+.editor-tbl td input:focus,.editor-tbl td select:focus{outline:none;border-color:var(--blue);}
+.count-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.count-row label{font-size:11px;font-weight:600;color:var(--g600);white-space:nowrap;}
+.count-row input{width:56px;padding:5px 7px;border:1.5px solid var(--g200);border-radius:5px;font-size:12.5px;}
 
-/* ── Alerts ──────────────────────────────────────────────────────── */
-.alert { padding: 10px 14px; border-radius: 6px; margin: 8px 0; font-size: 0.85rem; }
-.alert-error   { background: #FEF2F2; border-left: 4px solid #EF4444; color: #991B1B; }
-.alert-warning { background: #FFFBEB; border-left: 4px solid #F59E0B; color: #92400E; }
-.alert-info    { background: #EFF6FF; border-left: 4px solid #3B82F6; color: #1D4ED8; }
-.alert-success { background: #ECFDF5; border-left: 4px solid #10B981; color: #065F46; }
-#alert-container { margin: 6px 0; }
+/* ── Dependency pairs ─────────────────────────────────── */
+.dep-pair{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;
+  margin-bottom:4px;background:var(--g50);border:1px solid var(--g100);font-size:11.5px;}
+.dep-pair input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue);flex-shrink:0;}
+.dep-pair .dep-label{flex:1;color:var(--g600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dep-pair .dep-pij{width:70px;padding:3px 6px;border:1.5px solid var(--g200);border-radius:5px;font-size:11.5px;}
+.dep-pair .dep-pij:focus{outline:none;border-color:var(--blue);}
+.dep-pair .dep-pij:disabled{opacity:.35;background:var(--g50);}
+.dep-pair .dep-indep{font-size:10px;color:var(--g400);white-space:nowrap;}
 
-/* ── Misc ─────────────────────────────────────────────────────────── */
-.hidden { display: none !important; }
-.results-area { margin-top: 4px; }
-.chart-container { background: #fff; border-radius: 10px; padding: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.07); margin-bottom: 12px; }
-.spinner { text-align: center; padding: 20px; color: #6B7280; font-size: 0.9rem; }
-.sep { height: 1px; background: #E5E7EB; margin: 16px 0; }
-.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;
-  font-weight: 600; background: #DBEAFE; color: #1D4ED8; }
-.tag.green { background: #D1FAE5; color: #065F46; }
-.tag.red   { background: #FEE2E2; color: #991B1B; }
-.mono { font-family: 'Courier New', monospace; font-size: 0.82rem; }
-footer { text-align: center; padding: 16px; color: #9CA3AF; font-size: 0.78rem; }
+/* ── Main Content (right of sidebar) ─────────────────── */
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.panel{display:none;flex-direction:column;height:100%;}.panel.active{display:flex;}
 
-/* ── Compare panel ───────────────────────────────────────────────── */
-.scenario-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.scenario-item { display: flex; align-items: center; gap: 10px; background: #fff;
-  padding: 8px 14px; border-radius: 7px; border: 1.5px solid #E5E7EB;
-  box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-.scenario-item input[type=checkbox] { width: 16px; height: 16px; accent-color: #1D4ED8; }
-.scenario-item .s-label { flex: 1; font-size: 0.88rem; font-weight: 600; }
-.scenario-item .s-type  { font-size: 0.75rem; color: #6B7280; }
+/* ── Welcome ──────────────────────────────────────────── */
+.welcome-fill{flex:1;display:flex;align-items:center;justify-content:center;}
+.welcome-card{background:var(--white);border-radius:var(--r);padding:36px;
+  box-shadow:var(--shadow);text-align:center;color:var(--g400);}
+.welcome-card h3{font-size:15px;color:var(--g600);margin-bottom:6px;}
+.welcome-card p{font-size:12px;}
 
-/* ── Formula display ─────────────────────────────────────────────── */
-.formula-box { background: #1E293B; color: #7DD3FC; font-family: 'Courier New', monospace;
-  padding: 10px 16px; border-radius: 7px; font-size: 0.9rem; margin: 8px 0; }
+/* ── Input Summary Bar (top of results) ──────────────── */
+.summary-bar{
+  background:var(--white);border-bottom:2px solid var(--g100);
+  padding:10px 18px;display:flex;align-items:center;gap:0;flex-shrink:0;
+  flex-wrap:wrap;
+}
+.summary-bar-title{
+  font-size:10px;font-weight:800;color:var(--blue);text-transform:uppercase;
+  letter-spacing:.07em;margin-right:16px;white-space:nowrap;
+}
+.summary-chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;}
+.summary-chip{
+  background:var(--blue-lt);border:1px solid var(--blue-md);border-radius:5px;
+  padding:3px 9px;font-size:11px;color:var(--navy);
+}
+.summary-chip strong{font-weight:700;}
+.summary-chip.warn{background:#FEF3C7;border-color:#FDE68A;color:#713F12;}
+.summary-chip.ok  {background:#D1F0E0;border-color:#A7F3D0;color:#155724;}
+
+/* ── Results split area ───────────────────────────────── */
+.results-split{flex:1;display:flex;overflow:hidden;}
+
+/* Chart column */
+.chart-col{flex:1;overflow-y:auto;padding:14px 10px 20px 14px;}
+
+/* Stats column */
+.stats-col{
+  flex:1;min-width:220px;overflow-y:auto;
+  padding:14px 14px 20px 8px;
+  border-left:1px solid var(--g200);background:var(--g50);
+}
+
+/* ── KPI mini grid ────────────────────────────────────── */
+.kpi-mini-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px;}
+.kpi-mini{background:var(--white);border:1px solid var(--g100);border-top:3px solid var(--blue);
+  border-radius:6px;padding:5px 6px;text-align:center;box-shadow:var(--shadow);}
+.kpi-mini.success{border-top-color:var(--green);}
+.kpi-mini.warning{border-top-color:var(--amber);}
+.kpi-mini.danger {border-top-color:var(--red);}
+.kv{font-size:.80rem;font-weight:800;color:var(--navy);line-height:1.1;}
+.kl{font-size:8px;color:var(--g400);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+
+/* ── Result cards ─────────────────────────────────────── */
+.res-card{background:var(--white);border-radius:var(--r);padding:10px 12px;
+  box-shadow:var(--shadow);border:1px solid var(--g100);margin-bottom:8px;}
+.res-card-title{font-size:11px;font-weight:700;color:var(--blue);
+  margin-bottom:7px;padding-bottom:5px;border-bottom:1.5px solid var(--blue-md);}
+
+/* ── Side-by-side card row ────────────────────────────── */
+.cards-row{display:flex;gap:6px;margin-bottom:8px;}
+.cards-row .res-card{flex:1;min-width:0;margin-bottom:0;}
+
+/* ── Chart wrap ───────────────────────────────────────── */
+.chart-wrap{background:var(--white);border-radius:var(--r);padding:8px;
+  box-shadow:var(--shadow);border:1px solid var(--g100);margin-bottom:10px;}
+
+/* ── Bin control ──────────────────────────────────────── */
+.bin-ctrl{display:flex;align-items:center;gap:8px;padding:6px 10px;
+  background:var(--white);border:1px solid var(--g100);border-radius:7px;
+  margin-bottom:9px;box-shadow:var(--shadow);}
+.bin-ctrl .blbl{font-size:11px;color:var(--g600);font-weight:600;white-space:nowrap;}
+.bin-cnt{font-size:11px;font-weight:700;color:var(--navy);min-width:32px;text-align:center;}
+.bin-auto{padding:3px 9px;font-size:11px;border-radius:5px;
+  border:1.5px solid var(--g200);cursor:pointer;font-weight:600;
+  background:var(--white);color:var(--g600);transition:all .12s;}
+.bin-auto.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.bin-step{padding:3px 8px;font-size:12px;border-radius:5px;
+  border:1.5px solid var(--g200);cursor:pointer;font-weight:700;
+  background:var(--white);color:var(--g600);transition:all .12s;line-height:1;}
+.bin-step:hover{background:var(--g50);border-color:var(--blue);color:var(--blue);}
+
+/* ── Extra tabs (Sensitivity, Dependency, Export) ─────── */
+.extra-tabs{display:flex;gap:2px;border-bottom:2px solid var(--g200);margin-bottom:10px;}
+.extra-tab{padding:6px 13px;border:none;background:none;cursor:pointer;font-size:11.5px;
+  color:var(--g400);border-bottom:2px solid transparent;margin-bottom:-2px;
+  font-weight:500;border-radius:6px 6px 0 0;}
+.extra-tab:hover{background:var(--blue-lt);color:var(--g800);}
+.extra-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-lt);font-weight:700;}
+.extra-pane{display:none;}.extra-pane.active{display:block;}
+
+/* ── Tables ───────────────────────────────────────────── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{color:var(--blue);font-size:11px;font-weight:700;padding:7px 10px;
+  text-align:left;border-bottom:2px solid var(--blue-md);}
+.data-table td{padding:6px 10px;border-bottom:1px solid var(--g100);}
+.data-table tr:nth-child(even) td{background:var(--g50);}
+.data-table tr:hover td{background:var(--blue-lt);}
+
+/* Metric rows */
+.metric-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--g100);}
+.metric-row:last-child{border-bottom:none;}
+.metric-name{font-size:11px;color:var(--g600);}
+.metric-val{font-size:12px;font-weight:700;color:var(--g800);font-family:'Consolas',monospace;}
+.metric-val.blue{color:var(--blue);}.metric-val.red{color:var(--red);}.metric-val.green{color:var(--green);}
+
+/* ── Alerts ───────────────────────────────────────────── */
+.alert{padding:9px 13px;border-radius:6px;margin:5px 0;font-size:12px;}
+.alert-error  {background:#FDDEDE;border-left:4px solid var(--red);color:#7B1D1D;}
+.alert-warning{background:#FEF3C7;border-left:4px solid var(--amber);color:#713F12;}
+.alert-info   {background:var(--blue-lt);border-left:4px solid var(--blue);color:#1062A8;}
+.alert-success{background:#D1F0E0;border-left:4px solid var(--green);color:#155724;}
+#alert-container{padding:6px 16px 0;}
+
+/* ── Scenario Compare ─────────────────────────────────── */
+.sc-item{display:flex;align-items:center;gap:10px;background:var(--white);padding:8px 12px;
+  border-radius:7px;border:1.5px solid var(--g200);box-shadow:var(--shadow);margin-bottom:6px;}
+.sc-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue);}
+.sc-label{flex:1;font-size:12.5px;font-weight:600;}
+.sc-type{font-size:10.5px;color:var(--g400);}
+
+/* ── Misc ─────────────────────────────────────────────── */
+.hidden{display:none!important;}
+.sep{height:1px;background:var(--g100);margin:10px 0;}
+.mono{font-family:'Consolas','Courier New',monospace;font-size:11.5px;}
+.formula-box{background:var(--navy);color:#7DD3FC;font-family:'Consolas',monospace;
+  padding:9px 14px;border-radius:7px;font-size:13px;margin:6px 0 10px;}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--blue-md);color:var(--blue);}
+.tag.green{background:#D1F0E0;color:var(--green);}
+.tag.red{background:#FDDEDE;color:var(--red);}
+footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
+  border-top:1px solid var(--g100);background:var(--white);}
 </style>
 </head>
 <body>
+<div class="app-shell">
 
-<!-- ═══════════════════════════════════════════════════════════
-     HEADER
-══════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════ HEADER ══════════════════ -->
 <header class="app-header">
-  <span class="icon">🎲</span>
-  <div>
-    <h1>Monte Carlo Simulation Suite</h1>
-    <p>Quality, Tolerances &amp; Defect Analysis</p>
-  </div>
-  <div class="header-right">
-    <label>Seed: <input type="number" id="global-seed" value="42" min="0" max="99999" title="0 = random each run"></label>
-    <span class="scenarios-badge" id="badge-count">0 scenarios</span>
-  </div>
+  <div class="header-brand">Monte Carlo Simulation <span>| Model Excellence Suite</span></div>
+  <nav class="mode-tabs">
+    <button class="mode-tab active" onclick="switchTab('m1')" id="tab-m1">Process</button>
+    <button class="mode-tab" onclick="switchTab('m2')" id="tab-m2">Ind. Events</button>
+    <button class="mode-tab" onclick="switchTab('m3')" id="tab-m3">Dep. Events</button>
+    <button class="mode-tab" onclick="switchTab('m4')" id="tab-m4">Tolerance Stack</button>
+    <button class="mode-tab" onclick="switchTab('cmp')" id="tab-cmp">Compare</button>
+  </nav>
+  <div class="header-right">v1.7 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
 </header>
 
-<!-- ═══════════════════════════════════════════════════════════
-     NAVIGATION
-══════════════════════════════════════════════════════════════ -->
-<nav class="tab-nav">
-  <button class="tab-btn active" onclick="switchTab('m1')" id="tab-m1">🔬 Process</button>
-  <button class="tab-btn" onclick="switchTab('m2')" id="tab-m2">⚠️ Ind. Defects</button>
-  <button class="tab-btn" onclick="switchTab('m3')" id="tab-m3">🔗 Dep. Defects</button>
-  <button class="tab-btn" onclick="switchTab('m4')" id="tab-m4">📐 Stack Tol.</button>
-  <button class="tab-btn" onclick="switchTab('cmp')" id="tab-cmp">📊 Compare</button>
-</nav>
+<!-- ══════════════════ BODY ══════════════════ -->
+<div class="app-body">
 
-<main class="app-main">
-<div id="alert-container"></div>
+<!-- ════════ LEFT SIDEBAR — INPUT FIELDS ════════ -->
+<aside class="input-sidebar">
 
-<!-- ══════════════════════════════════════════════════════════════════
-     PANEL M1 — PROCESS SIMULATION
-══════════════════════════════════════════════════════════════════ -->
-<section class="panel active" id="panel-m1">
-  <h2>🔬 Mode 1 — Process Simulation</h2>
-  <p>Simulate process data from a parametric distribution. Individual observations or subgroup (runs) mode.</p>
-
-  <div class="input-grid cols-3">
-    <!-- Process params -->
-    <div class="card">
-      <h3>Process Parameters</h3>
+  <!-- M1 Inputs -->
+  <div class="input-panel active" id="inputs-m1">
+    <div class="inp-section">
+      <div class="inp-label">Simulation Setup</div>
+      <div class="form-group"><label>Simulation Name</label><input type="text" id="m1-name" value="Process Analysis 1"></div>
+      <div class="form-group"><label>Distribution</label>
+        <select id="m1-dist"><option>Normal</option><option>Lognormal</option><option>Uniform</option><option>Triangular</option><option>Weibull</option></select>
+      </div>
       <div class="form-group"><label>Mean (μ)</label><input type="number" id="m1-mean" value="100" step="any"></div>
       <div class="form-group"><label>Std Dev (σ)</label><input type="number" id="m1-std" value="5" min="0.0001" step="any"></div>
-      <div class="form-group">
-        <label>Distribution</label>
-        <select id="m1-dist">
-          <option>Normal</option><option>Lognormal</option>
-          <option>Uniform</option><option>Triangular</option><option>Weibull</option>
-        </select>
-      </div>
     </div>
-    <!-- Spec limits -->
-    <div class="card">
-      <h3>Specification Limits</h3>
-      <div class="checkbox-row"><input type="checkbox" id="m1-lsl-en" checked onchange="toggleInput('m1-lsl',this.checked)">
-        <label for="m1-lsl-en">Enable LSL</label></div>
+    <div class="inp-section">
+      <div class="inp-label">Specification Limits</div>
+      <div class="checkbox-row"><input type="checkbox" id="m1-lsl-en" checked onchange="toggleInput('m1-lsl',this.checked)"><label>Enable LSL</label></div>
       <div class="form-group"><label>LSL</label><input type="number" id="m1-lsl" value="85" step="any"></div>
-      <div class="checkbox-row"><input type="checkbox" id="m1-usl-en" checked onchange="toggleInput('m1-usl',this.checked)">
-        <label for="m1-usl-en">Enable USL</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="m1-usl-en" checked onchange="toggleInput('m1-usl',this.checked)"><label>Enable USL</label></div>
       <div class="form-group"><label>USL</label><input type="number" id="m1-usl" value="115" step="any"></div>
     </div>
-    <!-- Simulation setup -->
-    <div class="card">
-      <h3>Simulation Setup</h3>
-      <div class="form-group"><label>Mode</label>
+    <div class="inp-section">
+      <div class="inp-label">Iterations</div>
+      <div class="form-group"><label>Sampling Mode</label>
         <div class="radio-group">
           <label><input type="radio" name="m1-mode" value="obs" checked onchange="m1ToggleMode()"> Observations</label>
           <label><input type="radio" name="m1-mode" value="runs" onchange="m1ToggleMode()"> Runs</label>
         </div>
       </div>
-      <div class="form-group"><label>Obs. per simulation / run</label><input type="number" id="m1-nobs" value="50" min="2"></div>
-      <div class="form-group" id="m1-runs-group" style="opacity:.4;pointer-events:none">
-        <label>Runs per simulation</label><input type="number" id="m1-nruns" value="30" min="2">
-      </div>
-      <div class="form-group"><label>Number of simulations</label><input type="number" id="m1-nsim" value="1000" min="10"></div>
+      <div class="form-group"><label>Obs per sim / run</label><input type="number" id="m1-nobs" value="50" min="2"></div>
+      <div class="form-group" id="m1-runs-group" style="opacity:.4;pointer-events:none"><label>Runs per simulation</label><input type="number" id="m1-nruns" value="30" min="2"></div>
+      <div class="form-group"><label>Simulations</label><input type="number" id="m1-nsim" value="1000" min="10"></div>
+      <div class="form-group"><label>RNG Seed (0=random)</label><input type="number" id="m1-seed" value="42" min="0"></div>
     </div>
-  </div>
+    <div class="inp-spacer"></div>
+    <div class="inp-footer"><button class="btn-run" onclick="runMode1()">▶ Run Simulation</button></div>
+  </div><!-- /inputs-m1 -->
 
-  <button class="btn-run" onclick="runMode1()">▶ Run Simulation</button>
-
-  <div class="results-area hidden" id="m1-results">
-    <div class="sec-hdr">Key Performance Indicators</div>
-    <div class="kpi-strip" id="m1-kpis"></div>
-    <div class="res-tabs">
-      <button class="res-tab active" onclick="switchResTab('m1','charts')">📈 Charts</button>
-      <button class="res-tab" onclick="switchResTab('m1','stats')">📋 Statistics</button>
-      <button class="res-tab" onclick="switchResTab('m1','export')">⬇️ Export</button>
-    </div>
-    <div class="res-content">
-      <div class="res-pane active" id="m1-pane-charts">
-        <div class="chart-container"><div id="m1-chart1" style="height:360px"></div></div>
-        <div class="chart-container" id="m1-chart2-wrap" style="display:none"><div id="m1-chart2" style="height:320px"></div></div>
+  <!-- M2 Inputs -->
+  <div class="input-panel" id="inputs-m2">
+    <div class="inp-section">
+      <div class="inp-label">Simulation Setup</div>
+      <div class="form-group"><label>Simulation Name</label><input type="text" id="m2-name" value="Event Analysis 1"></div>
+      <div class="count-row">
+        <label>Event types:</label>
+        <input type="number" id="m2-n-types" value="3" min="1" max="20" onchange="m2SetCount(parseInt(this.value)||1)">
+        <button class="btn btn-primary btn-sm" onclick="m2AddEvent()">+</button>
+        <button class="btn btn-secondary btn-sm" onclick="m2RemoveEvent()">−</button>
       </div>
-      <div class="res-pane" id="m1-pane-stats">
-        <div class="two-col-stats">
-          <div><div class="sec-hdr">Observation Statistics</div><div id="m1-stats-obs"></div></div>
-          <div><div class="sec-hdr">Yield &amp; Capability</div><div id="m1-stats-cap"></div></div>
-        </div>
-        <div class="alert alert-info" style="margin-top:10px;font-size:0.8rem">
-          ⚠️ Cp/Cpk are valid approximations only for approximately normal data. For Lognormal/Weibull use DPMO and Yield as primary metrics.
-        </div>
-      </div>
-      <div class="res-pane" id="m1-pane-export">
-        <div class="sec-hdr">Download Results</div>
-        <div class="btn-bar">
-          <button class="btn btn-secondary" onclick="m1Export('obs')">⬇️ Observations CSV</button>
-          <button class="btn btn-secondary" onclick="m1Export('stats')">⬇️ Statistics CSV</button>
-        </div>
-        <div class="sep"></div>
-        <button class="btn btn-success" onclick="saveScenario('m1')">💾 Save Scenario for Comparison</button>
-      </div>
+      <table class="editor-tbl" id="m2-tbl">
+        <thead><tr><th>Event Name</th><th>P(event)</th><th></th></tr></thead>
+        <tbody id="m2-event-body"></tbody>
+      </table>
     </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════════════════
-     PANEL M2 — INDEPENDENT DEFECTS
-══════════════════════════════════════════════════════════════════ -->
-<section class="panel" id="panel-m2">
-  <h2>⚠️ Mode 2 — Independent Defects</h2>
-  <p>Model multiple defect types as independent Bernoulli trials. Each unit is evaluated for each defect independently.</p>
-
-  <div class="card">
-    <div class="btn-bar">
-      <button class="btn btn-primary btn-sm" onclick="m2AddDefect()">➕ Add defect</button>
-      <button class="btn btn-secondary btn-sm" onclick="m2RemoveDefect()">➖ Remove last</button>
-    </div>
-    <div class="editor-hdr defect-hdr"><span>Defect Name</span><span>P(defect)</span><span></span></div>
-    <div id="m2-defect-editor"></div>
-  </div>
-
-  <div class="input-grid cols-2" style="margin-top:12px">
-    <div class="card">
-      <h3>Simulation Setup</h3>
+    <div class="inp-section">
+      <div class="inp-label">Parameters</div>
       <div class="form-group"><label>Units per simulation</label><input type="number" id="m2-nunits" value="500" min="10"></div>
-      <div class="form-group"><label>Number of simulations</label><input type="number" id="m2-nsim" value="1000" min="10"></div>
+      <div class="form-group"><label>Simulations</label><input type="number" id="m2-nsim" value="1000" min="10"></div>
+      <div class="form-group"><label>RNG Seed (0=random)</label><input type="number" id="m2-seed" value="42" min="0"></div>
+      <div class="checkbox-row"><input type="checkbox" id="m2-thr-en" onchange="toggleInput('m2-thr',this.checked)"><label>Enable count threshold</label></div>
+      <div class="form-group"><label>Threshold</label><input type="number" id="m2-thr" value="20" min="0" disabled></div>
     </div>
-    <div class="card">
-      <h3>Threshold Analysis</h3>
-      <div class="checkbox-row"><input type="checkbox" id="m2-thr-en" onchange="toggleInput('m2-thr',this.checked)">
-        <label for="m2-thr-en">Enable threshold</label></div>
-      <div class="form-group"><label>Count threshold</label>
-        <input type="number" id="m2-thr" value="20" min="0" disabled></div>
-      <div class="form-group"><label>Report interest</label>
-        <select id="m2-interest">
-          <option value="both">Both (defects + defective items)</option>
-          <option value="defects">Total defects only</option>
-          <option value="defective">Defective items only</option>
-        </select>
+    <div class="inp-spacer"></div>
+    <div class="inp-footer"><button class="btn-run" onclick="runMode2()">▶ Run Simulation</button></div>
+  </div><!-- /inputs-m2 -->
+
+  <!-- M3 Inputs -->
+  <div class="input-panel" id="inputs-m3">
+    <div class="inp-section">
+      <div class="inp-label">Simulation Setup</div>
+      <div class="form-group"><label>Simulation Name</label><input type="text" id="m3-name" value="Dependency Analysis 1"></div>
+      <div class="count-row">
+        <label>Events (N):</label>
+        <input type="number" id="m3-n-events" value="3" min="2" max="10" onchange="m3SetCount(parseInt(this.value)||2)">
+        <button class="btn btn-primary btn-sm" onclick="m3AddEvent()">+</button>
+        <button class="btn btn-secondary btn-sm" onclick="m3RemoveEvent()">−</button>
       </div>
+      <table class="editor-tbl">
+        <thead><tr><th>Event Name</th><th>P(event)</th></tr></thead>
+        <tbody id="m3-event-body"></tbody>
+      </table>
     </div>
-  </div>
-
-  <button class="btn-run" onclick="runMode2()">▶ Run Simulation</button>
-
-  <div class="results-area hidden" id="m2-results">
-    <div class="sec-hdr">Key Performance Indicators</div>
-    <div class="kpi-strip" id="m2-kpis"></div>
-    <div id="m2-thr-result"></div>
-    <div class="res-tabs">
-      <button class="res-tab active" onclick="switchResTab('m2','charts')">📈 Charts</button>
-      <button class="res-tab" onclick="switchResTab('m2','stats')">📋 Statistics</button>
-      <button class="res-tab" onclick="switchResTab('m2','export')">⬇️ Export</button>
+    <div class="inp-section">
+      <div class="inp-label">Dependency Pairs</div>
+      <p style="font-size:10.5px;color:var(--g400);margin-bottom:8px;">Check pairs that co-occur non-randomly and enter P(i∩j).</p>
+      <div id="m3-dep-pairs"></div>
     </div>
-    <div class="res-content">
-      <div class="res-pane active" id="m2-pane-charts">
-        <div class="chart-container"><div id="m2-chart1" style="height:360px"></div></div>
-        <div class="chart-container"><div id="m2-chart2" style="height:280px"></div></div>
-      </div>
-      <div class="res-pane" id="m2-pane-stats">
-        <div class="two-col-stats">
-          <div><div class="sec-hdr">Defects Distribution</div><div id="m2-stats-def"></div></div>
-          <div><div class="sec-hdr">Defective Items Distribution</div><div id="m2-stats-dfu"></div></div>
-        </div>
-        <div class="sec-hdr" style="margin-top:14px">Per-Defect Summary</div>
-        <div id="m2-per-defect-tbl"></div>
-      </div>
-      <div class="res-pane" id="m2-pane-export">
-        <div class="btn-bar">
-          <button class="btn btn-secondary" onclick="m2Export('sim')">⬇️ Simulation CSV</button>
-          <button class="btn btn-secondary" onclick="m2Export('per')">⬇️ Per-Defect CSV</button>
-        </div>
-        <div class="sep"></div>
-        <button class="btn btn-success" onclick="saveScenario('m2')">💾 Save Scenario for Comparison</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════════════════
-     PANEL M3 — DEPENDENT DEFECTS
-══════════════════════════════════════════════════════════════════ -->
-<section class="panel" id="panel-m3">
-  <h2>🔗 Mode 3 — Dependent Defects (Joint Probabilities)</h2>
-  <p>Model correlated defect types using a joint probability state table. Compares automatically against the independent case.</p>
-
-  <div class="card" style="margin-bottom:12px">
-    <div class="form-group">
-      <label>Number of correlated defect types</label>
-      <div class="radio-group">
-        <label><input type="radio" name="m3-nd" value="2" checked onchange="m3BuildUI()"> 2 defects</label>
-        <label><input type="radio" name="m3-nd" value="3" onchange="m3BuildUI()"> 3 defects</label>
-      </div>
-    </div>
-  </div>
-
-  <div id="m3-ui"></div>
-
-  <div class="input-grid cols-2">
-    <div class="card">
-      <h3>Simulation Setup</h3>
+    <div class="inp-section">
+      <div class="inp-label">Parameters</div>
       <div class="form-group"><label>Units per simulation</label><input type="number" id="m3-nunits" value="500" min="10"></div>
-      <div class="form-group"><label>Number of simulations</label><input type="number" id="m3-nsim" value="1000" min="10"></div>
+      <div class="form-group"><label>Simulations</label><input type="number" id="m3-nsim" value="1000" min="10"></div>
+      <div class="form-group"><label>RNG Seed (0=random)</label><input type="number" id="m3-seed" value="42" min="0"></div>
     </div>
-    <div class="card">
-      <h3>Help</h3>
-      <p style="margin:0">Enter the probability that <strong>both</strong> defects occur in the same unit simultaneously.</p>
-      <p>P(A∩B) = P(A)·P(B) → independent. P(A∩B) > P(A)·P(B) → positive correlation.</p>
-    </div>
-  </div>
+    <div class="inp-spacer"></div>
+    <div class="inp-footer"><button class="btn-run" onclick="runMode3()">▶ Run Simulation</button></div>
+  </div><!-- /inputs-m3 -->
 
-  <button class="btn-run" onclick="runMode3()">▶ Run Simulation</button>
-
-  <div class="results-area hidden" id="m3-results">
-    <div class="sec-hdr">Key Performance Indicators</div>
-    <div class="kpi-strip" id="m3-kpis"></div>
-    <div id="m3-delta-info"></div>
-    <div class="res-tabs">
-      <button class="res-tab active" onclick="switchResTab('m3','charts')">📈 Charts</button>
-      <button class="res-tab" onclick="switchResTab('m3','states')">🗂️ State Table</button>
-      <button class="res-tab" onclick="switchResTab('m3','stats')">📋 Statistics</button>
-      <button class="res-tab" onclick="switchResTab('m3','export')">⬇️ Export</button>
-    </div>
-    <div class="res-content">
-      <div class="res-pane active" id="m3-pane-charts">
-        <div class="chart-container"><div id="m3-chart1" style="height:360px"></div></div>
-        <div class="chart-container"><div id="m3-chart2" style="height:320px"></div></div>
+  <!-- M4 Inputs -->
+  <div class="input-panel" id="inputs-m4">
+    <div class="inp-section">
+      <div class="inp-label">Simulation Setup</div>
+      <div class="form-group"><label>Simulation Name</label><input type="text" id="m4-name" value="Stack Analysis 1"></div>
+      <div class="formula-box" style="font-size:12px;margin-bottom:10px;">Y = Σ signᵢ × Xᵢ</div>
+      <div class="btn-bar" style="margin-bottom:6px;">
+        <button class="btn btn-primary btn-sm" onclick="m4AddComp()">+ Component</button>
+        <button class="btn btn-secondary btn-sm" onclick="m4RemoveComp()">− Remove</button>
       </div>
-      <div class="res-pane" id="m3-pane-states">
-        <div class="sec-hdr">State Probability Table</div>
-        <p>Each row is a possible combination of defect occurrences in a single unit.</p>
-        <div id="m3-state-tbl"></div>
-        <div class="sec-hdr" style="margin-top:14px">Metric Comparison: Dependent vs Independent</div>
-        <div id="m3-cmp-tbl"></div>
-      </div>
-      <div class="res-pane" id="m3-pane-stats">
-        <div class="two-col-stats">
-          <div><div class="sec-hdr">Defects (Dependent model)</div><div id="m3-stats-def"></div></div>
-          <div><div class="sec-hdr">Defective Items (Dependent)</div><div id="m3-stats-dfu"></div></div>
-        </div>
-      </div>
-      <div class="res-pane" id="m3-pane-export">
-        <div class="btn-bar">
-          <button class="btn btn-secondary" onclick="m3Export('sim')">⬇️ Simulation CSV</button>
-          <button class="btn btn-secondary" onclick="m3Export('cmp')">⬇️ Comparison CSV</button>
-        </div>
-        <div class="sep"></div>
-        <button class="btn btn-success" onclick="saveScenario('m3')">💾 Save Scenario for Comparison</button>
-      </div>
+      <table class="editor-tbl" style="font-size:11px;">
+        <thead><tr><th>Name</th><th>μ</th><th>σ</th><th>Dist</th><th>Sign</th><th></th></tr></thead>
+        <tbody id="m4-comp-body"></tbody>
+      </table>
     </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════════════════
-     PANEL M4 — TOLERANCE STACK-UP
-══════════════════════════════════════════════════════════════════ -->
-<section class="panel" id="panel-m4">
-  <h2>📐 Mode 4 — Tolerance Stack-Up</h2>
-  <p>Simulate the output of a dimensional assembly as the signed algebraic sum of component variables.</p>
-  <div class="formula-box">Y = Σ sign<sub>i</sub> × X<sub>i</sub></div>
-
-  <div class="card" style="margin-top:12px">
-    <div class="btn-bar">
-      <button class="btn btn-primary btn-sm" onclick="m4AddComp()">➕ Add component</button>
-      <button class="btn btn-secondary btn-sm" onclick="m4RemoveComp()">➖ Remove last</button>
-    </div>
-    <div class="editor-hdr comp-hdr">
-      <span>Name</span><span>Mean (μ)</span><span>Std Dev (σ)</span>
-      <span>Distribution</span><span>Sign</span><span></span>
-    </div>
-    <div id="m4-comp-editor"></div>
-  </div>
-
-  <div class="input-grid cols-3" style="margin-top:12px">
-    <div class="card">
-      <h3>Output Spec. Limits</h3>
-      <div class="checkbox-row"><input type="checkbox" id="m4-lsl-en" checked onchange="toggleInput('m4-lsl',this.checked)">
-        <label for="m4-lsl-en">Enable LSL</label></div>
+    <div class="inp-section">
+      <div class="inp-label">Output Spec. Limits</div>
+      <div class="checkbox-row"><input type="checkbox" id="m4-lsl-en" checked onchange="toggleInput('m4-lsl',this.checked)"><label>Enable LSL</label></div>
       <div class="form-group"><label>LSL (output Y)</label><input type="number" id="m4-lsl" value="-0.30" step="any"></div>
-      <div class="checkbox-row"><input type="checkbox" id="m4-usl-en" checked onchange="toggleInput('m4-usl',this.checked)">
-        <label for="m4-usl-en">Enable USL</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="m4-usl-en" checked onchange="toggleInput('m4-usl',this.checked)"><label>Enable USL</label></div>
       <div class="form-group"><label>USL (output Y)</label><input type="number" id="m4-usl" value="0.30" step="any"></div>
+      <div class="form-group"><label>Simulations</label><input type="number" id="m4-nsim" value="10000" min="100"></div>
+      <div class="form-group"><label>RNG Seed (0=random)</label><input type="number" id="m4-seed" value="42" min="0"></div>
     </div>
-    <div class="card">
-      <h3>Simulation</h3>
-      <div class="form-group"><label>Number of simulations</label><input type="number" id="m4-nsim" value="10000" min="100"></div>
-    </div>
-    <div class="card">
-      <h3>Notes</h3>
-      <p style="margin:0">Sign <strong>+1</strong>: component adds to output.<br>
-         Sign <strong>−1</strong>: component subtracts.<br>
-         Variance contribution assumes independence.<br>
-         Empirical corr. captures interactions.</p>
-    </div>
-  </div>
+    <div class="inp-spacer"></div>
+    <div class="inp-footer"><button class="btn-run" onclick="runMode4()">▶ Run Simulation</button></div>
+  </div><!-- /inputs-m4 -->
 
-  <button class="btn-run" onclick="runMode4()">▶ Run Simulation</button>
-
-  <div class="results-area hidden" id="m4-results">
-    <div class="sec-hdr">Key Performance Indicators</div>
-    <div class="kpi-strip" id="m4-kpis"></div>
-    <div class="res-tabs">
-      <button class="res-tab active" onclick="switchResTab('m4','charts')">📈 Charts</button>
-      <button class="res-tab" onclick="switchResTab('m4','sens')">🎯 Sensitivity</button>
-      <button class="res-tab" onclick="switchResTab('m4','stats')">📋 Statistics</button>
-      <button class="res-tab" onclick="switchResTab('m4','export')">⬇️ Export</button>
-    </div>
-    <div class="res-content">
-      <div class="res-pane active" id="m4-pane-charts">
-        <div class="chart-container"><div id="m4-chart1" style="height:380px"></div></div>
+  <!-- Compare Inputs -->
+  <div class="input-panel" id="inputs-cmp">
+    <div class="inp-section">
+      <div class="inp-label">Saved Scenarios</div>
+      <div id="cmp-scenario-list" style="margin-bottom:10px;"></div>
+      <div class="btn-bar">
+        <button class="btn btn-primary btn-sm" onclick="renderCompare()">↺ Update</button>
+        <button class="btn btn-danger btn-sm" onclick="clearScenarios()">✕ Clear All</button>
       </div>
-      <div class="res-pane" id="m4-pane-sens">
-        <div class="chart-container"><div id="m4-chart2" style="height:320px"></div></div>
-        <div class="sec-hdr" style="margin-top:10px">Sensitivity Detail Table</div>
-        <div id="m4-sens-tbl"></div>
-        <div class="alert alert-info" style="margin-top:8px;font-size:0.8rem">
-          Variance Contribution (%) assumes independent components: σ²ᵢ / Σσ²ⱼ. Empirical correlation with the stack captures any nonlinear effects.
+    </div>
+    <div class="inp-spacer"></div>
+  </div><!-- /inputs-cmp -->
+
+</aside><!-- /input-sidebar -->
+
+<!-- ════════ MAIN CONTENT ════════ -->
+<main class="main-content">
+  <div id="alert-container"></div>
+
+  <!-- ── M1 Panel ── -->
+  <div class="panel active" id="panel-m1">
+    <!-- Welcome state -->
+    <div id="m1-welcome" class="welcome-fill">
+      <div class="welcome-card">
+        <h3>Process Simulation</h3>
+        <p>Configure distribution and spec limits on the left, then click <strong>Run Simulation</strong>.</p>
+      </div>
+    </div>
+    <!-- Results state -->
+    <div id="m1-results" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <!-- Input Summary Bar -->
+      <div class="summary-bar" id="m1-summary-bar">
+        <span class="summary-bar-title">Input Summary</span>
+        <div class="summary-chips" id="m1-summary-chips"></div>
+      </div>
+      <!-- Chart + Stats split -->
+      <div class="results-split">
+        <div class="chart-col">
+          <!-- Histogram bin control -->
+          <div class="bin-ctrl">
+            <span class="blbl">Histogram Bins:</span>
+            <button class="bin-auto on" id="m1-bin-auto-btn" onclick="setBinsMode('m1','auto')">Auto</button>
+            <button class="bin-step" onclick="stepBins('m1',-10)">▼</button>
+            <span class="bin-cnt" id="m1-bin-label">Auto</span>
+            <button class="bin-step" onclick="stepBins('m1',10)">▲</button>
+          </div>
+          <div class="chart-wrap"><div id="m1-chart1" style="height:310px"></div></div>
+          <div class="chart-wrap" id="m1-chart2-wrap" style="display:none"><div id="m1-chart2" style="height:250px"></div></div>
+          <!-- Export -->
+          <div class="res-card">
+            <div class="res-card-title">Export</div>
+            <div class="btn-bar">
+              <button class="btn btn-secondary" onclick="m1Export('obs')">⬇ Observations CSV</button>
+              <button class="btn btn-secondary" onclick="m1Export('stats')">⬇ Statistics CSV</button>
+            </div>
+            <div class="sep"></div>
+            <button class="btn btn-success" onclick="saveScenario('m1')">Save Scenario for Comparison</button>
+          </div>
+        </div>
+        <!-- Stats column -->
+        <div class="stats-col">
+          <div id="m1-kpis"></div>
+          <div class="cards-row">
+            <div class="res-card"><div class="res-card-title">Observation Statistics</div><div id="m1-stats-obs"></div></div>
+            <div class="res-card"><div class="res-card-title">Process Capability (Cpk)</div><div id="m1-stats-cap"></div></div>
+          </div>
+          <div class="alert alert-info" style="font-size:10.5px;">Cp/Cpk valid for approximately Normal data. For Lognormal or Weibull, rely on DPMO and Yield.</div>
         </div>
       </div>
-      <div class="res-pane" id="m4-pane-stats">
-        <div class="two-col-stats">
-          <div><div class="sec-hdr">Stack Output Statistics</div><div id="m4-stats-stack"></div></div>
-          <div><div class="sec-hdr">Yield &amp; Capability</div><div id="m4-stats-cap"></div></div>
-        </div>
-      </div>
-      <div class="res-pane" id="m4-pane-export">
-        <div class="btn-bar">
-          <button class="btn btn-secondary" onclick="m4Export('stack')">⬇️ Stack Output CSV</button>
-          <button class="btn btn-secondary" onclick="m4Export('sens')">⬇️ Sensitivity CSV</button>
-        </div>
-        <div class="sep"></div>
-        <button class="btn btn-success" onclick="saveScenario('m4')">💾 Save Scenario for Comparison</button>
+    </div>
+  </div><!-- /panel-m1 -->
+
+  <!-- ── M2 Panel ── -->
+  <div class="panel" id="panel-m2">
+    <div id="m2-welcome" class="welcome-fill">
+      <div class="welcome-card">
+        <h3>Independent Binary Event Simulation</h3>
+        <p>Define event types and probabilities on the left, then click <strong>Run Simulation</strong>.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════════════════
-     PANEL — COMPARE
-══════════════════════════════════════════════════════════════════ -->
-<section class="panel" id="panel-cmp">
-  <h2>📊 Scenario Comparison</h2>
-  <p>Save scenarios from any mode using the 💾 button, then compare them here.</p>
-  <div id="cmp-empty" class="alert alert-info">No saved scenarios yet. Run a simulation and click <strong>💾 Save Scenario</strong>.</div>
-  <div id="cmp-content" class="hidden">
-    <div class="sec-hdr">Saved Scenarios</div>
-    <div class="scenario-list" id="cmp-scenario-list"></div>
-    <div class="btn-bar">
-      <button class="btn btn-primary" onclick="renderCompare()">🔄 Update Comparison</button>
-      <button class="btn btn-danger btn-sm" onclick="clearScenarios()">🗑️ Clear All</button>
+    <div id="m2-results" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <div class="summary-bar">
+        <span class="summary-bar-title">Input Summary</span>
+        <div class="summary-chips" id="m2-summary-chips"></div>
+      </div>
+      <div class="results-split">
+        <div class="chart-col">
+          <div id="m2-thr-result"></div>
+          <div class="chart-wrap"><div id="m2-chart1" style="height:300px"></div></div>
+          <div class="chart-wrap"><div id="m2-chart2" style="height:240px"></div></div>
+          <div class="res-card">
+            <div class="res-card-title">Export</div>
+            <div class="btn-bar">
+              <button class="btn btn-secondary" onclick="m2Export('sim')">⬇ Simulation CSV</button>
+              <button class="btn btn-secondary" onclick="m2Export('per')">⬇ Per-Event CSV</button>
+            </div>
+            <div class="sep"></div>
+            <button class="btn btn-success" onclick="saveScenario('m2')">Save Scenario for Comparison</button>
+          </div>
+        </div>
+        <div class="stats-col">
+          <div id="m2-kpis"></div>
+          <div class="res-card"><div class="res-card-title">Total Events Distribution</div><div id="m2-stats-def"></div></div>
+          <div class="res-card"><div class="res-card-title">Affected Units Distribution</div><div id="m2-stats-dfu"></div></div>
+          <div class="res-card"><div class="res-card-title">Per-Event Type Summary</div><div id="m2-per-event-tbl"></div></div>
+        </div>
+      </div>
     </div>
-    <div class="sep"></div>
-    <div id="cmp-charts-area"></div>
-    <div id="cmp-table-area"></div>
-  </div>
-</section>
+  </div><!-- /panel-m2 -->
 
-</main>
-<footer>Monte Carlo Simulation Suite — v1.0 | Single-file HTML Application</footer>
+  <!-- ── M3 Panel ── -->
+  <div class="panel" id="panel-m3">
+    <div id="m3-welcome" class="welcome-fill">
+      <div class="welcome-card">
+        <h3>Dependent Binary Event Simulation</h3>
+        <p>Define N events, select correlated pairs, and enter joint probabilities on the left, then click <strong>Run Simulation</strong>.</p>
+      </div>
+    </div>
+    <div id="m3-results" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <div class="summary-bar">
+        <span class="summary-bar-title">Input Summary</span>
+        <div class="summary-chips" id="m3-summary-chips"></div>
+      </div>
+      <div class="results-split">
+        <div class="chart-col">
+          <div id="m3-delta-info"></div>
+          <div class="chart-wrap"><div id="m3-chart1" style="height:300px"></div></div>
+          <div class="chart-wrap"><div id="m3-chart2" style="height:260px"></div></div>
+          <!-- Dependency + Export tabs -->
+          <div class="res-card">
+            <div class="extra-tabs">
+              <button class="extra-tab active" onclick="switchExtra('m3','dep',event)">Dependency Detail</button>
+              <button class="extra-tab" onclick="switchExtra('m3','exp',event)">Export</button>
+            </div>
+            <div class="extra-pane active" id="m3-extra-dep">
+              <div style="margin-bottom:8px;"><div class="res-card-title">Dependency Configuration &amp; Effect</div><div id="m3-dep-tbl"></div></div>
+              <div><div class="res-card-title">Metric Comparison: Dependent vs Independent</div><div id="m3-cmp-tbl"></div></div>
+              <div class="alert alert-info" style="margin-top:6px;font-size:10.5px;">For events with multiple dependencies, a linear superposition of conditional probability adjustments is used — an approximation for complex joint structures.</div>
+            </div>
+            <div class="extra-pane" id="m3-extra-exp">
+              <div class="btn-bar">
+                <button class="btn btn-secondary" onclick="m3Export('sim')">⬇ Simulation CSV</button>
+                <button class="btn btn-secondary" onclick="m3Export('cmp')">⬇ Comparison CSV</button>
+              </div>
+              <div class="sep"></div>
+              <button class="btn btn-success" onclick="saveScenario('m3')">Save Scenario for Comparison</button>
+            </div>
+          </div>
+        </div>
+        <div class="stats-col">
+          <div id="m3-kpis"></div>
+          <div class="res-card"><div class="res-card-title">Total Events (Dependent)</div><div id="m3-stats-def"></div></div>
+          <div class="res-card"><div class="res-card-title">Affected Units (Dependent)</div><div id="m3-stats-dfu"></div></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /panel-m3 -->
 
-<!-- ══════════════════════════════════════════════════════════════════
+  <!-- ── M4 Panel ── -->
+  <div class="panel" id="panel-m4">
+    <div id="m4-welcome" class="welcome-fill">
+      <div class="welcome-card">
+        <h3>Tolerance Stack-Up</h3>
+        <p>Define components and spec limits on the left, then click <strong>Run Simulation</strong>.</p>
+      </div>
+    </div>
+    <div id="m4-results" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <div class="summary-bar">
+        <span class="summary-bar-title">Input Summary</span>
+        <div class="summary-chips" id="m4-summary-chips"></div>
+      </div>
+      <div class="results-split">
+        <div class="chart-col">
+          <div class="bin-ctrl">
+            <span class="blbl">Histogram Bins:</span>
+            <button class="bin-auto on" id="m4-bin-auto-btn" onclick="setBinsMode('m4','auto')">Auto</button>
+            <button class="bin-step" onclick="stepBins('m4',-10)">▼</button>
+            <span class="bin-cnt" id="m4-bin-label">Auto</span>
+            <button class="bin-step" onclick="stepBins('m4',10)">▲</button>
+          </div>
+          <div class="chart-wrap"><div id="m4-chart1" style="height:310px"></div></div>
+          <!-- Sensitivity + Export tabs -->
+          <div class="res-card">
+            <div class="extra-tabs">
+              <button class="extra-tab active" onclick="switchExtra('m4','sens',event)">Sensitivity</button>
+              <button class="extra-tab" onclick="switchExtra('m4','exp',event)">Export</button>
+            </div>
+            <div class="extra-pane active" id="m4-extra-sens">
+              <div class="chart-wrap"><div id="m4-chart2" style="height:250px"></div></div>
+              <div class="res-card-title">Sensitivity Detail Table</div>
+              <div id="m4-sens-tbl"></div>
+              <div class="alert alert-info" style="margin-top:6px;font-size:10.5px;">Variance Contribution (%) assumes independent components: σ²ᵢ / Σσ²ⱼ.</div>
+            </div>
+            <div class="extra-pane" id="m4-extra-exp">
+              <div class="btn-bar">
+                <button class="btn btn-secondary" onclick="m4Export('stack')">⬇ Stack Output CSV</button>
+                <button class="btn btn-secondary" onclick="m4Export('sens')">⬇ Sensitivity CSV</button>
+              </div>
+              <div class="sep"></div>
+              <button class="btn btn-success" onclick="saveScenario('m4')">Save Scenario for Comparison</button>
+            </div>
+          </div>
+        </div>
+        <div class="stats-col">
+          <div id="m4-kpis"></div>
+          <div class="cards-row">
+            <div class="res-card"><div class="res-card-title">Stack Output Statistics</div><div id="m4-stats-stack"></div></div>
+            <div class="res-card"><div class="res-card-title">Process Capability (Cpk)</div><div id="m4-stats-cap"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /panel-m4 -->
+
+  <!-- ── Compare Panel ── -->
+  <div class="panel" id="panel-cmp">
+    <div id="cmp-empty" class="welcome-fill">
+      <div class="welcome-card">
+        <h3>Scenario Comparison</h3>
+        <p>Save scenarios from any mode, select them in the left panel, and click <strong>Update</strong>.</p>
+      </div>
+    </div>
+    <div id="cmp-content" class="hidden" style="flex:1;overflow-y:auto;padding:18px;">
+      <div class="chart-wrap"><div id="cmp-chart-overlay" style="height:360px"></div></div>
+      <div class="res-card"><div class="res-card-title">Metrics Summary</div><div id="cmp-tbl"></div></div>
+      <div class="btn-bar" style="margin-top:6px;"><button class="btn btn-secondary" onclick="cmpExport()">⬇ Export Comparison CSV</button></div>
+    </div>
+  </div><!-- /panel-cmp -->
+
+</main><!-- /main-content -->
+</div><!-- /app-body -->
+<footer>Monte Carlo Simulation Suite — v1.7 | Single-file HTML | All simulations run client-side</footer>
+</div><!-- /app-shell -->
+
+<!-- ══════════════════════════════════════════════════
      JAVASCRIPT
-══════════════════════════════════════════════════════════════════ -->
+══════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-// ═══════════════════════════════════════════════════════════════════
-// RNG — Mulberry32 seeded pseudo-random number generator
-// ═══════════════════════════════════════════════════════════════════
-const RNG = {
-  _s: 42,
-  seed(s) { this._s = (s >>> 0) || 1; },
-  next() {
-    this._s = (this._s + 0x6D2B79F5) >>> 0;
-    let t = Math.imul(this._s ^ (this._s >>> 15), 1 | this._s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+// ═══════════════════════════════════════════════════
+// RNG — Mulberry32
+// ═══════════════════════════════════════════════════
+const RNG={
+  _s:42,
+  seed(s){this._s=(s>>>0)||1;},
+  next(){
+    this._s=(this._s+0x6D2B79F5)>>>0;
+    let t=Math.imul(this._s^(this._s>>>15),1|this._s);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return((t^(t>>>14))>>>0)/4294967296;
   }
 };
+function initRNG(seedId){const el=document.getElementById(seedId);const s=el?parseInt(el.value)||0:42;RNG.seed(s===0?Date.now():s);}
 
-function initRNG() {
-  const s = parseInt(document.getElementById('global-seed').value) || 0;
-  RNG.seed(s === 0 ? Date.now() : s);
+// ═══════════════════════════════════════════════════
+// MATH
+// ═══════════════════════════════════════════════════
+function arr_mean(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i];return s/a.length;}
+function arr_std(a,ddof=1){const m=arr_mean(a);let ss=0;for(let i=0;i<a.length;i++)ss+=(a[i]-m)**2;return Math.sqrt(ss/(a.length-ddof));}
+function arr_min(a){let m=Infinity; for(const v of a)if(v<m)m=v;return m;}
+function arr_max(a){let m=-Infinity;for(const v of a)if(v>m)m=v;return m;}
+function arr_sum(a){let s=0;for(const v of a)s+=v;return s;}
+function arr_pct(a,p){const s=[...a].sort((x,y)=>x-y);const i=(p/100)*(s.length-1);const lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo);}
+function gammaFn(n){
+  const g=7,p=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  if(n<0.5)return Math.PI/(Math.sin(Math.PI*n)*gammaFn(1-n));
+  n-=1;let x=p[0];for(let i=1;i<g+2;i++)x+=p[i]/(n+i);
+  const t=n+g+0.5;return Math.sqrt(2*Math.PI)*Math.pow(t,n+0.5)*Math.exp(-t)*x;
 }
+function bisect(f,a,b,tol=1e-7,maxIter=120){let fa=f(a),fb=f(b);if(fa*fb>0)return(a+b)/2;for(let i=0;i<maxIter;i++){const c=(a+b)/2,fc=f(c);if(Math.abs(fc)<tol||(b-a)/2<tol)return c;fa*fc<0?(b=c,fb=fc):(a=c,fa=fc);}return(a+b)/2;}
+function normPDF(x,mu,sigma){return Math.exp(-0.5*((x-mu)/sigma)**2)/(sigma*Math.sqrt(2*Math.PI));}
+function normCDF(x){const t=1/(1+0.2316419*Math.abs(x));const poly=t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));const p=1-normPDF(x,0,1)*poly;return x>=0?p:1-p;}
 
-// ═══════════════════════════════════════════════════════════════════
-// MATH UTILITIES
-// ═══════════════════════════════════════════════════════════════════
-function arr_mean(a) {
-  let s = 0; for (let i = 0; i < a.length; i++) s += a[i];
-  return s / a.length;
-}
-function arr_std(a, ddof = 1) {
-  const m = arr_mean(a); let ss = 0;
-  for (let i = 0; i < a.length; i++) ss += (a[i] - m) ** 2;
-  return Math.sqrt(ss / (a.length - ddof));
-}
-function arr_min(a) { let m = Infinity; for (const v of a) if (v < m) m = v; return m; }
-function arr_max(a) { let m = -Infinity; for (const v of a) if (v > m) m = v; return m; }
-function arr_percentile(a, p) {
-  const sorted = [...a].sort((x, y) => x - y);
-  const idx = (p / 100) * (sorted.length - 1);
-  const lo = Math.floor(idx), hi = Math.ceil(idx);
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
-function arr_sum(a) { let s = 0; for (const v of a) s += v; return s; }
+// ═══════════════════════════════════════════════════
+// SAMPLERS
+// ═══════════════════════════════════════════════════
+function sampleNormal(mu,sigma,n){const a=new Float64Array(n);for(let i=0;i<n;i++){const u1=RNG.next()||1e-12,u2=RNG.next();a[i]=mu+sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);}return a;}
+function sampleLognormal(mu,sigma,n){if(mu<=0)throw new Error('Lognormal requires mean > 0');const s2=Math.log(1+(sigma/mu)**2),sln=Math.sqrt(s2),mln=Math.log(mu)-s2/2;const a=new Float64Array(n);for(let i=0;i<n;i++){const u1=RNG.next()||1e-12,u2=RNG.next();a[i]=Math.exp(mln+sln*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2));}return a;}
+function sampleUniform(mu,sigma,n){const half=sigma*Math.sqrt(3),lo=mu-half,hi=mu+half;const a=new Float64Array(n);for(let i=0;i<n;i++)a[i]=lo+(hi-lo)*RNG.next();return a;}
+function sampleTriangular(mu,sigma,n){const half=sigma*Math.sqrt(6),lo=mu-half,hi=mu+half,mode=mu,fc=(mode-lo)/(hi-lo);const a=new Float64Array(n);for(let i=0;i<n;i++){const u=RNG.next();a[i]=u<fc?lo+Math.sqrt(u*(hi-lo)*(mode-lo)):hi-Math.sqrt((1-u)*(hi-lo)*(hi-mode));}return a;}
+function sampleWeibull(mu,sigma,n){const cv=sigma/mu;const kShape=bisect(k=>{const g1=gammaFn(1+1/k),g2=gammaFn(1+2/k);return Math.sqrt(Math.max(g2/(g1*g1)-1,0))-cv;},0.05,200);const lam=mu/gammaFn(1+1/kShape);const a=new Float64Array(n);for(let i=0;i<n;i++)a[i]=lam*Math.pow(-Math.log(RNG.next()||1e-12),1/kShape);return a;}
+function sampleDist(d,mu,sigma,n){switch(d){case'Normal':return sampleNormal(mu,sigma,n);case'Lognormal':return sampleLognormal(mu,sigma,n);case'Uniform':return sampleUniform(mu,sigma,n);case'Triangular':return sampleTriangular(mu,sigma,n);case'Weibull':return sampleWeibull(mu,sigma,n);default:return sampleNormal(mu,sigma,n);}}
 
-// Lanczos gamma function (for Weibull fitting)
-function gammaFn(n) {
-  const g = 7;
-  const p = [0.99999999999980993,676.5203681218851,-1259.1392167224028,
-             771.32342877765313,-176.61502916214059,12.507343278686905,
-             -0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
-  if (n < 0.5) return Math.PI / (Math.sin(Math.PI * n) * gammaFn(1 - n));
-  n -= 1; let x = p[0];
-  for (let i = 1; i < g + 2; i++) x += p[i] / (n + i);
-  const t = n + g + 0.5;
-  return Math.sqrt(2 * Math.PI) * Math.pow(t, n + 0.5) * Math.exp(-t) * x;
-}
+// ═══════════════════════════════════════════════════
+// STATISTICS
+// ═══════════════════════════════════════════════════
+function basicStats(arr){const a=Array.from(arr),m=arr_mean(a),s=arr_std(a);return{N:a.length,Mean:m,'Std Dev':s,Min:arr_min(a),P5:arr_pct(a,5),P25:arr_pct(a,25),'P50 (Median)':arr_pct(a,50),P75:arr_pct(a,75),P95:arr_pct(a,95),Max:arr_max(a)};}
+function yieldMetrics(arr,lsl,usl){const a=Array.from(arr),n=a.length;const outLow=(lsl!=null)?a.filter(v=>v<lsl).length:0;const outHigh=(usl!=null)?a.filter(v=>v>usl).length:0;const outTot=outLow+outHigh,defRate=outTot/n;const res={'Yield (%)':+(((1-defRate)*100).toFixed(4)),'Defect Rate':+defRate.toFixed(6),'DPMO':+(defRate*1e6).toFixed(2),'Out of Spec':outTot};if(lsl!=null)res['Below LSL']=outLow;if(usl!=null)res['Above USL']=outHigh;return res;}
+function processCap(arr,lsl,usl){const a=Array.from(arr),mu=arr_mean(a),sigma=arr_std(a);if(sigma===0)return{Note:'σ=0 — capability undefined'};const res={};if(lsl!=null&&usl!=null){const cp=(usl-lsl)/(6*sigma),cpu=(usl-mu)/(3*sigma),cpl=(mu-lsl)/(3*sigma);Object.assign(res,{Cp:+cp.toFixed(4),Cpk:+Math.min(cpu,cpl).toFixed(4),Cpu:+cpu.toFixed(4),Cpl:+cpl.toFixed(4)});}else if(usl!=null){res.Cpu=+(((usl-mu)/(3*sigma)).toFixed(4));}else if(lsl!=null){res.Cpl=+(((mu-lsl)/(3*sigma)).toFixed(4));}return res;}
 
-// Bisection solver
-function bisect(f, a, b, tol = 1e-7, maxIter = 120) {
-  let fa = f(a), fb = f(b);
-  if (fa * fb > 0) return (a + b) / 2;
-  for (let i = 0; i < maxIter; i++) {
-    const c = (a + b) / 2, fc = f(c);
-    if (Math.abs(fc) < tol || (b - a) / 2 < tol) return c;
-    fa * fc < 0 ? (b = c, fb = fc) : (a = c, fa = fc);
+// ═══════════════════════════════════════════════════
+// BIN STATE
+// ═══════════════════════════════════════════════════
+const histBinsState={m1:'auto',m4:'auto'};
+const histBinsCount={m1:80,m4:80};
+function setBinsMode(mode,type,val){
+  if(type==='auto'){
+    histBinsState[mode]='auto';
+    document.getElementById(`${mode}-bin-label`).textContent='Auto';
+    document.getElementById(`${mode}-bin-auto-btn`).classList.add('on');
+  } else {
+    histBinsState[mode]='manual';
+    histBinsCount[mode]=parseInt(val)||80;
+    document.getElementById(`${mode}-bin-label`).textContent=histBinsCount[mode];
+    document.getElementById(`${mode}-bin-auto-btn`).classList.remove('on');
   }
-  return (a + b) / 2;
+  if(mode==='m1'&&lastResults.m1)renderM1Charts();
+  if(mode==='m4'&&lastResults.m4)renderM4Chart();
 }
+function stepBins(mode,delta){
+  const current=histBinsState[mode]==='auto'?80:histBinsCount[mode];
+  const next=Math.max(10,Math.min(300,current+delta));
+  setBinsMode(mode,'manual',next);
+}
+function getBins(mode){return histBinsState[mode]==='auto'?0:histBinsCount[mode];}
 
-// Normal PDF
-function normPDF(x, mu, sigma) {
-  return Math.exp(-0.5 * ((x - mu) / sigma) ** 2) / (sigma * Math.sqrt(2 * Math.PI));
-}
-// Normal CDF (rational approximation)
-function normCDF(x) {
-  const t = 1 / (1 + 0.2316419 * Math.abs(x));
-  const poly = t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
-  const p = 1 - normPDF(x, 0, 1) * poly;
-  return x >= 0 ? p : 1 - p;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// DISTRIBUTION SAMPLERS
-// ═══════════════════════════════════════════════════════════════════
-function sampleNormal(mu, sigma, n) {
-  const a = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    // Box-Muller
-    const u1 = RNG.next() || 1e-12, u2 = RNG.next();
-    a[i] = mu + sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  }
-  return a;
-}
-function sampleLognormal(mu, sigma, n) {
-  if (mu <= 0) throw new Error('Lognormal requires mean > 0');
-  const s2 = Math.log(1 + (sigma / mu) ** 2);
-  const sln = Math.sqrt(s2), mln = Math.log(mu) - s2 / 2;
-  const a = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    const u1 = RNG.next() || 1e-12, u2 = RNG.next();
-    a[i] = Math.exp(mln + sln * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2));
-  }
-  return a;
-}
-function sampleUniform(mu, sigma, n) {
-  const half = sigma * Math.sqrt(3), lo = mu - half, hi = mu + half;
-  const a = new Float64Array(n);
-  for (let i = 0; i < n; i++) a[i] = lo + (hi - lo) * RNG.next();
-  return a;
-}
-function sampleTriangular(mu, sigma, n) {
-  // Symmetric triangular: mode = mu, spread = sigma*sqrt(6)
-  const half = sigma * Math.sqrt(6), lo = mu - half, hi = mu + half, mode = mu;
-  const fc = (mode - lo) / (hi - lo);
-  const a = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    const u = RNG.next();
-    a[i] = u < fc
-      ? lo + Math.sqrt(u * (hi - lo) * (mode - lo))
-      : hi - Math.sqrt((1 - u) * (hi - lo) * (hi - mode));
-  }
-  return a;
-}
-function sampleWeibull(mu, sigma, n) {
-  const cv = sigma / mu;
-  const kShape = bisect(k => {
-    const g1 = gammaFn(1 + 1 / k), g2 = gammaFn(1 + 2 / k);
-    return Math.sqrt(Math.max(g2 / (g1 * g1) - 1, 0)) - cv;
-  }, 0.05, 200);
-  const lam = mu / gammaFn(1 + 1 / kShape);
-  const a = new Float64Array(n);
-  for (let i = 0; i < n; i++) a[i] = lam * Math.pow(-Math.log(RNG.next() || 1e-12), 1 / kShape);
-  return a;
-}
-function sampleDist(distName, mu, sigma, n) {
-  switch (distName) {
-    case 'Normal':      return sampleNormal(mu, sigma, n);
-    case 'Lognormal':   return sampleLognormal(mu, sigma, n);
-    case 'Uniform':     return sampleUniform(mu, sigma, n);
-    case 'Triangular':  return sampleTriangular(mu, sigma, n);
-    case 'Weibull':     return sampleWeibull(mu, sigma, n);
-    default:            return sampleNormal(mu, sigma, n);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// STATISTICS OUTPUTS
-// ═══════════════════════════════════════════════════════════════════
-function basicStats(arr) {
-  const a = Array.from(arr);
-  const m = arr_mean(a), s = arr_std(a);
-  return {
-    N:              a.length,
-    Mean:           m,
-    'Std Dev':      s,
-    Min:            arr_min(a),
-    P5:             arr_percentile(a, 5),
-    P25:            arr_percentile(a, 25),
-    'P50 (Median)': arr_percentile(a, 50),
-    P75:            arr_percentile(a, 75),
-    P95:            arr_percentile(a, 95),
-    Max:            arr_max(a),
-  };
-}
-function yieldMetrics(arr, lsl, usl) {
-  const a = Array.from(arr), n = a.length;
-  const outLow  = (lsl != null) ? a.filter(v => v < lsl).length : 0;
-  const outHigh = (usl != null) ? a.filter(v => v > usl).length : 0;
-  const outTot  = outLow + outHigh;
-  const defRate = outTot / n;
-  const res = {
-    'Yield (%)':           +(((1 - defRate) * 100).toFixed(4)),
-    'Defect Rate':         +defRate.toFixed(6),
-    'DPMO':                +(defRate * 1e6).toFixed(2),
-    'Out of Spec (total)': outTot,
-  };
-  if (lsl != null) res['Below LSL'] = outLow;
-  if (usl != null) res['Above USL'] = outHigh;
-  return res;
-}
-function processCap(arr, lsl, usl) {
-  const a = Array.from(arr);
-  const mu = arr_mean(a), sigma = arr_std(a);
-  if (sigma === 0) return { Note: 'σ = 0 — capability undefined' };
-  const res = {};
-  if (lsl != null && usl != null) {
-    const cp  = (usl - lsl) / (6 * sigma);
-    const cpu = (usl - mu)  / (3 * sigma);
-    const cpl = (mu - lsl)  / (3 * sigma);
-    Object.assign(res, { Cp: +cp.toFixed(4), Cpk: +Math.min(cpu, cpl).toFixed(4),
-                          Cpu: +cpu.toFixed(4), Cpl: +cpl.toFixed(4) });
-  } else if (usl != null) {
-    res.Cpu = +(((usl - mu) / (3 * sigma)).toFixed(4));
-  } else if (lsl != null) {
-    res.Cpl = +(((mu - lsl) / (3 * sigma)).toFixed(4));
-  }
-  return res;
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // PLOTLY HELPERS
-// ═══════════════════════════════════════════════════════════════════
-const PLOTLY_LAYOUT = {
-  template: 'plotly_white',
-  font: { family: 'system-ui, sans-serif', size: 12 },
-  margin: { l: 55, r: 30, t: 50, b: 50 },
-  legend: { orientation: 'h', yanchor: 'bottom', y: 1.02, xanchor: 'right', x: 1 },
-  paper_bgcolor: '#fff', plot_bgcolor: '#fff',
-};
-function plt(id, traces, layout, config = {}) {
-  Plotly.newPlot(id, traces, Object.assign({}, PLOTLY_LAYOUT, layout),
-    Object.assign({ responsive: true, displayModeBar: true, modeBarButtonsToRemove: ['lasso2d','select2d'] }, config));
+// ═══════════════════════════════════════════════════
+const PLY_BASE={template:'plotly_white',font:{family:"'Segoe UI',system-ui,sans-serif",size:12},margin:{l:55,r:30,t:46,b:46},legend:{orientation:'h',yanchor:'bottom',y:1.02,xanchor:'right',x:1},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
+function plt(id,traces,layout,cfg={}){Plotly.newPlot(id,traces,Object.assign({},PLY_BASE,layout),Object.assign({responsive:true,displayModeBar:true,modeBarButtonsToRemove:['lasso2d','select2d']},cfg));}
+function normalFitCurve(arr,color,name){color=color||'#D4540F';name=name||'Normal fit';const mu=arr_mean(Array.from(arr)),sigma=arr_std(Array.from(arr));const x=[],y=[];for(let i=0;i<=400;i++){const xi=(mu-4*sigma)+8*sigma*i/400;x.push(xi);y.push(normPDF(xi,mu,sigma));}return{x,y,type:'scatter',mode:'lines',name,line:{color,width:2.5,dash:'dash'}};}
+function specShapes(lsl,usl,dMin,dMax){const shapes=[],ann=[],pad=(dMax-dMin)*0.05;if(lsl!=null){shapes.push({type:'line',x0:lsl,x1:lsl,y0:0,y1:1,yref:'paper',line:{color:'#C0392B',width:2,dash:'dash'}});shapes.push({type:'rect',x0:dMin-pad,x1:lsl,y0:0,y1:1,yref:'paper',fillcolor:'rgba(192,57,43,0.08)',line:{width:0}});ann.push({x:lsl,y:0.97,yref:'paper',text:`LSL=${lsl}`,showarrow:false,font:{color:'#C0392B',size:11},xanchor:'left'});}if(usl!=null){shapes.push({type:'line',x0:usl,x1:usl,y0:0,y1:1,yref:'paper',line:{color:'#C0392B',width:2,dash:'dash'}});shapes.push({type:'rect',x0:usl,x1:dMax+pad,y0:0,y1:1,yref:'paper',fillcolor:'rgba(192,57,43,0.08)',line:{width:0}});ann.push({x:usl,y:0.97,yref:'paper',text:`USL=${usl}`,showarrow:false,font:{color:'#C0392B',size:11},xanchor:'right'});}return{shapes,ann};}
+function plotDistribution(id,arr,lsl,usl,title,barColor,xLabel,nbinsx){
+  barColor=barColor||'#5BA8D4';xLabel=xLabel||'Value';nbinsx=nbinsx||0;
+  const data=Array.from(arr),mu=arr_mean(data),sigma=arr_std(data),dMin=arr_min(data),dMax=arr_max(data);
+  const{shapes,ann}=specShapes(lsl,usl,dMin,dMax);
+  shapes.push({type:'line',x0:mu,x1:mu,y0:0,y1:1,yref:'paper',line:{color:'#198754',width:2,dash:'dot'}});
+  ann.push({x:mu,y:0.92,yref:'paper',text:`μ=${mu.toFixed(3)}`,showarrow:false,font:{color:'#198754',size:11},xanchor:'left'});
+  plt(id,[{x:data,type:'histogram',histnorm:'probability density',nbinsx,name:'Simulated',
+    marker:{color:barColor,opacity:0.65,line:{color:'rgba(255,255,255,0.8)',width:0.8}}},normalFitCurve(arr)],
+    {title,xaxis:{title:xLabel},yaxis:{title:'Density'},shapes,annotations:ann,bargap:0.06});
+}
+function plotDualHistogram(id,evts,aff,nUnits,title){
+  const yPct=((1-arr_mean(Array.from(aff))/nUnits)*100).toFixed(2);
+  plt(id,[{x:Array.from(evts),type:'histogram',nbinsx:50,name:'Total Events',marker:{color:'#1578BE',opacity:0.75}},{x:Array.from(aff),type:'histogram',nbinsx:50,name:'Affected Units',marker:{color:'#D4540F',opacity:0.75},xaxis:'x2',yaxis:'y2'}],
+    {title,barmode:'overlay',grid:{rows:1,columns:2,pattern:'independent'},xaxis:{title:'Events per sim',domain:[0,0.47]},xaxis2:{title:'Affected units per sim',domain:[0.53,1]},yaxis:{title:'Frequency'},yaxis2:{title:''},
+    annotations:[{x:0.8,y:0.95,xref:'paper',yref:'paper',text:`<b>Yield ≈ ${yPct}%</b>`,showarrow:false,font:{color:'#198754',size:13},bgcolor:'#D1F0E0',borderpad:4}]});
+}
+function plotOverlay(id,datasets,labels,lsl,usl,title,xLabel){
+  xLabel=xLabel||'Value';
+  const COLS=['#1578BE','#D4540F','#198754','#7C3AED','#EC4899','#14B8A6'];
+  const traces=datasets.map((arr,i)=>{const data=Array.from(arr),mu=arr_mean(data),sigma=arr_std(data),x=[],y=[],xMin=arr_min(data)-sigma,xMax=arr_max(data)+sigma;for(let j=0;j<=300;j++){const xi=xMin+(xMax-xMin)*j/300;x.push(xi);y.push(normPDF(xi,mu,sigma));}const col=COLS[i%COLS.length];const hx=col.replace('#','');const r=parseInt(hx.slice(0,2),16),g=parseInt(hx.slice(2,4),16),b=parseInt(hx.slice(4,6),16);return{x,y,type:'scatter',mode:'lines',name:labels[i],line:{color:col,width:2.5},fill:'tozeroy',fillcolor:`rgba(${r},${g},${b},0.07)`};});
+  const allD=datasets.flatMap(d=>Array.from(d));const{shapes,ann}=specShapes(lsl,usl,arr_min(allD),arr_max(allD));
+  plt(id,traces,{title,xaxis:{title:xLabel},yaxis:{title:'Density'},shapes,annotations:ann});
+}
+function plotBars(id,labels,values,title,colors){
+  plt(id,[{x:values,y:labels,type:'bar',orientation:'h',marker:{color:colors||values.map(v=>v>30?'#C0392B':v>10?'#D4540F':'#1578BE')},text:values.map(v=>typeof v==='number'?v.toFixed(1)+'%':String(v)),textposition:'outside'}],
+    {title,xaxis:{title:'Variance Contribution (%)'},yaxis:{title:''},height:Math.max(260,labels.length*42+100)});
 }
 
-// Normal fit overlay curve
-function normalFitCurve(arr, color = '#F97316', name = 'Normal fit') {
-  const mu = arr_mean(Array.from(arr)), sigma = arr_std(Array.from(arr));
-  const x = [], y = [];
-  for (let i = 0; i <= 400; i++) {
-    const xi = (mu - 4 * sigma) + 8 * sigma * i / 400;
-    x.push(xi); y.push(normPDF(xi, mu, sigma));
-  }
-  return { x, y, type: 'scatter', mode: 'lines', name,
-           line: { color, width: 2.5, dash: 'dash' }, yaxis: 'y' };
-}
-
-// Spec limit shapes
-function specShapes(lsl, usl, dataMin, dataMax) {
-  const shapes = [], annotations = [];
-  const pad = (dataMax - dataMin) * 0.05;
-  if (lsl != null) {
-    shapes.push({ type: 'line', x0: lsl, x1: lsl, y0: 0, y1: 1, yref: 'paper',
-                  line: { color: '#DC2626', width: 2.5 } });
-    shapes.push({ type: 'rect', x0: dataMin - pad, x1: lsl, y0: 0, y1: 1, yref: 'paper',
-                  fillcolor: 'rgba(220,38,38,0.12)', line: { width: 0 } });
-    annotations.push({ x: lsl, y: 0.97, yref: 'paper', text: `LSL=${lsl}`,
-                        showarrow: false, font: { color: '#DC2626', size: 11 }, xanchor: 'left' });
-  }
-  if (usl != null) {
-    shapes.push({ type: 'line', x0: usl, x1: usl, y0: 0, y1: 1, yref: 'paper',
-                  line: { color: '#DC2626', width: 2.5 } });
-    shapes.push({ type: 'rect', x0: usl, x1: dataMax + pad, y0: 0, y1: 1, yref: 'paper',
-                  fillcolor: 'rgba(220,38,38,0.12)', line: { width: 0 } });
-    annotations.push({ x: usl, y: 0.97, yref: 'paper', text: `USL=${usl}`,
-                        showarrow: false, font: { color: '#DC2626', size: 11 }, xanchor: 'right' });
-  }
-  return { shapes, annotations };
-}
-
-function plotDistribution(elementId, arr, lsl, usl, title, barColor = '#2563EB', xLabel = 'Value') {
-  const data = Array.from(arr);
-  const mu = arr_mean(data), sigma = arr_std(data);
-  const dMin = arr_min(data), dMax = arr_max(data);
-  const { shapes, annotations } = specShapes(lsl, usl, dMin, dMax);
-  // Mean line
-  shapes.push({ type: 'line', x0: mu, x1: mu, y0: 0, y1: 1, yref: 'paper',
-                line: { color: '#16A34A', width: 2, dash: 'dot' } });
-  annotations.push({ x: mu, y: 0.92, yref: 'paper', text: `μ=${mu.toFixed(3)}`,
-                      showarrow: false, font: { color: '#16A34A', size: 11 }, xanchor: 'left' });
-  const traces = [
-    { x: data, type: 'histogram', histnorm: 'probability density', nbinsx: 60,
-      name: 'Simulated data', marker: { color: barColor, opacity: 0.72 } },
-    normalFitCurve(arr),
-  ];
-  plt(elementId, traces, { title, xaxis: { title: xLabel }, yaxis: { title: 'Density' }, shapes, annotations });
-}
-
-function plotDualHistogram(elementId, defects, defective, nUnits, title) {
-  const yieldPct = ((1 - arr_mean(Array.from(defective)) / nUnits) * 100).toFixed(2);
-  plt(elementId, [
-    { x: Array.from(defects), type: 'histogram', nbinsx: 40, name: 'Total Defects',
-      marker: { color: '#2563EB', opacity: 0.75 } },
-    { x: Array.from(defective), type: 'histogram', nbinsx: 40, name: 'Defective Items',
-      marker: { color: '#F97316', opacity: 0.75 }, xaxis: 'x2', yaxis: 'y2' },
-  ], {
-    title, barmode: 'overlay',
-    grid: { rows: 1, columns: 2, pattern: 'independent' },
-    xaxis:  { title: 'Count (defects)', domain: [0, 0.47] },
-    xaxis2: { title: 'Count (defective)', domain: [0.53, 1] },
-    yaxis:  { title: 'Frequency' }, yaxis2: { title: '' },
-    annotations: [{
-      x: 0.8, y: 0.95, xref: 'paper', yref: 'paper',
-      text: `<b>Yield ≈ ${yieldPct}%</b>`, showarrow: false,
-      font: { color: '#16A34A', size: 13 }, bgcolor: '#ECFDF5', borderpad: 4,
-    }],
-  });
-}
-
-function plotOverlay(elementId, datasets, labels, lsl, usl, title, xLabel = 'Value') {
-  const COLORS = ['#2563EB','#F97316','#16A34A','#7C3AED','#EC4899','#14B8A6'];
-  const traces = datasets.map((arr, i) => {
-    const data = Array.from(arr);
-    const mu = arr_mean(data), sigma = arr_std(data);
-    const x = [], y = [];
-    const xMin = arr_min(data) - sigma, xMax = arr_max(data) + sigma;
-    for (let j = 0; j <= 300; j++) {
-      const xi = xMin + (xMax - xMin) * j / 300;
-      x.push(xi); y.push(normPDF(xi, mu, sigma));
-    }
-    return { x, y, type: 'scatter', mode: 'lines', name: labels[i],
-             line: { color: COLORS[i % COLORS.length], width: 2.5 },
-             fill: 'tozeroy', fillcolor: COLORS[i % COLORS.length].replace(')', ',0.08)').replace('#', 'rgba(').replace('rgba(', 'rgba(').replace(/^rgba\(([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2}),/, (_, r, g, b) => `rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},`) };
-  });
-  // Build shapes
-  const allData = datasets.flatMap(d => Array.from(d));
-  const { shapes, annotations } = specShapes(lsl, usl, arr_min(allData), arr_max(allData));
-  plt(elementId, traces, { title, xaxis: { title: xLabel }, yaxis: { title: 'Density' }, shapes, annotations });
-}
-
-function plotBars(elementId, labels, values, title, colors) {
-  const COLORS = colors || values.map(v => v > 30 ? '#EF4444' : v > 10 ? '#F97316' : '#2563EB');
-  plt(elementId, [{
-    x: values, y: labels, type: 'bar', orientation: 'h',
-    marker: { color: COLORS }, text: values.map(v => typeof v === 'number' ? v.toFixed(1) + '%' : String(v)),
-    textposition: 'outside',
-  }], { title, xaxis: { title: 'Variance Contribution (%)' }, yaxis: { title: '' }, height: Math.max(280, labels.length * 40 + 100) });
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // UI HELPERS
-// ═══════════════════════════════════════════════════════════════════
-function switchTab(id) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-  document.getElementById('tab-' + id).classList.add('active');
-  if (id === 'cmp') refreshComparePanel();
+// ═══════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.input-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('inputs-'+id).classList.add('active');
+  if(id==='cmp')refreshComparePanel();
 }
-
-function switchResTab(mode, tab) {
-  const allPanes = document.querySelectorAll(`[id^="${mode}-pane-"]`);
-  const allTabs  = document.querySelectorAll(`[onclick*="switchResTab('${mode}'"]`);
-  allPanes.forEach(p => p.classList.remove('active'));
-  allTabs.forEach(t => t.classList.remove('active'));
-  document.getElementById(`${mode}-pane-${tab}`).classList.add('active');
-  event.target.classList.add('active');
+function switchExtra(mode,tab,evt){
+  const card=(evt&&evt.target)?evt.target.closest('.res-card'):null;
+  if(card){card.querySelectorAll('.extra-tab').forEach(t=>t.classList.remove('active'));card.querySelectorAll('.extra-pane').forEach(p=>p.classList.remove('active'));}
+  document.getElementById(`${mode}-extra-${tab}`).classList.add('active');
+  if(evt&&evt.target)evt.target.classList.add('active');
 }
-
-function toggleInput(id, enabled) {
-  const el = document.getElementById(id);
-  el.disabled = !enabled;
-  el.style.opacity = enabled ? '1' : '0.4';
+function toggleInput(id,enabled){const el=document.getElementById(id);el.disabled=!enabled;el.style.opacity=enabled?'1':'0.4';}
+function showResults(welcomeId,resultsId){
+  document.getElementById(welcomeId).classList.add('hidden');
+  const el=document.getElementById(resultsId);
+  el.classList.remove('hidden');
+  el.style.display='flex';
 }
-
-function showResults(id) {
-  document.getElementById(id).classList.remove('hidden');
-}
-
-function renderKPIs(containerId, kpis) {
-  const c = document.getElementById(containerId);
-  c.innerHTML = kpis.map(({ label, value, type }) =>
-    `<div class="kpi-card ${type || ''}">
-       <div class="kpi-value">${value}</div>
-       <div class="kpi-label">${label}</div>
-     </div>`
-  ).join('');
-}
-
-function renderStatsTable(containerId, statsObj, precision = 4) {
-  const rows = Object.entries(statsObj).map(([k, v]) => {
-    const val = typeof v === 'number' ? (+v.toFixed(precision)).toLocaleString('en-US', { maximumFractionDigits: precision }) : String(v);
-    return `<tr><td><strong>${k}</strong></td><td class="mono">${val}</td></tr>`;
+function chip(label,value,cls){return `<div class="summary-chip ${cls||''}"><strong>${label}:</strong> ${value}</div>`;}
+function renderKPIs(cid,kpis){document.getElementById(cid).innerHTML=`<div class="kpi-mini-grid">${kpis.map(({label,value,type})=>`<div class="kpi-mini ${type||''}"><div class="kv">${value}</div><div class="kl">${label}</div></div>`).join('')}</div>`;}
+function renderMetrics(cid,obj,precision=4){
+  document.getElementById(cid).innerHTML=Object.entries(obj).map(([k,v])=>{
+    const val=typeof v==='number'?(+v.toFixed(precision)).toLocaleString('en-US',{maximumFractionDigits:precision}):String(v);
+    const cls=k==='Cpk'?(+val<1?'red':+val>=1.33?'green':'blue'):(k.includes('DPMO')||k.includes('Out')||k.includes('Below')||k.includes('Above'))?'red':'';
+    return `<div class="metric-row"><span class="metric-name">${k}</span><span class="metric-val ${cls}">${val}</span></div>`;
   }).join('');
-  document.getElementById(containerId).innerHTML =
-    `<table class="stats-table"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-
-function renderGenericTable(containerId, headers, rows) {
-  const ths = headers.map(h => `<th>${h}</th>`).join('');
-  const trs = rows.map(r =>
-    `<tr>${r.map(c => `<td class="mono">${typeof c === 'number' ? c.toFixed(4) : c}</td>`).join('')}</tr>`
-  ).join('');
-  document.getElementById(containerId).innerHTML =
-    `<table class="stats-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+function renderDataTable(cid,headers,rows){
+  const ths=headers.map(h=>`<th>${h}</th>`).join('');
+  const trs=rows.map(r=>`<tr>${r.map(c=>`<td class="mono">${typeof c==='number'?c.toFixed(4):c}</td>`).join('')}</tr>`).join('');
+  document.getElementById(cid).innerHTML=`<table class="data-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
 }
+function showAlert(msg,type='error'){const c=document.getElementById('alert-container');const div=document.createElement('div');div.className=`alert alert-${type}`;div.innerHTML=msg;c.appendChild(div);setTimeout(()=>div.remove(),6000);}
+function clearAlerts(){document.getElementById('alert-container').innerHTML='';}
+function downloadCSV(data,filename){let csv;if(Array.isArray(data[0])){csv=data.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');}else{const keys=Object.keys(data[0]);csv=[keys.join(','),...data.map(r=>keys.map(k=>`"${r[k]}"`).join(','))].join('\n');}const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
+function fmt(v,d=4){if(typeof v!=='number')return String(v);if(Number.isInteger(v))return v.toLocaleString();return(+v.toFixed(d)).toLocaleString('en-US',{maximumFractionDigits:d});}
 
-function showAlert(msg, type = 'error') {
-  const c = document.getElementById('alert-container');
-  const div = document.createElement('div');
-  div.className = `alert alert-${type}`;
-  div.innerHTML = msg;
-  c.appendChild(div);
-  setTimeout(() => div.remove(), 6000);
-}
-function clearAlerts() { document.getElementById('alert-container').innerHTML = ''; }
-
-// CSV export
-function downloadCSV(data, filename) {
-  let csv;
-  if (Array.isArray(data[0])) {
-    csv = data.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-  } else {
-    // Array of objects
-    const keys = Object.keys(data[0]);
-    csv = [keys.join(','), ...data.map(r => keys.map(k => `"${r[k]}"`).join(','))].join('\n');
-  }
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-// fmt
-function fmt(v, d = 4) {
-  if (typeof v !== 'number') return String(v);
-  if (Number.isInteger(v)) return v.toLocaleString();
-  return (+v.toFixed(d)).toLocaleString('en-US', { maximumFractionDigits: d });
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // SCENARIO STORAGE
-// ═══════════════════════════════════════════════════════════════════
-let savedScenarios = [];
-let lastResults = { m1: null, m2: null, m3: null, m4: null };
+// ═══════════════════════════════════════════════════
+let savedScenarios=[],lastResults={m1:null,m2:null,m3:null,m4:null};
+function saveScenario(mode){const r=lastResults[mode];if(!r){showAlert('Run a simulation first.','warning');return;}const n=savedScenarios.length+1;const label=`[${n}] ${r._label||mode}`;savedScenarios.push({label,mode,result:r});updateBadge();showAlert(`Saved: <strong>${label}</strong>`,'success');}
+function updateBadge(){document.getElementById('badge-count').textContent=savedScenarios.length;}
+function clearScenarios(){savedScenarios=[];updateBadge();refreshComparePanel();}
 
-function saveScenario(mode) {
-  const r = lastResults[mode];
-  if (!r) { showAlert('Run a simulation first.', 'warning'); return; }
-  const n = savedScenarios.length + 1;
-  const label = `[${n}] ${r._label || mode}`;
-  savedScenarios.push({ label, mode, result: r });
-  updateBadge();
-  showAlert(`Saved as <strong>${label}</strong>`, 'success');
-}
-
-function updateBadge() {
-  document.getElementById('badge-count').textContent = `${savedScenarios.length} scenario${savedScenarios.length !== 1 ? 's' : ''}`;
-}
-
-function clearScenarios() {
-  savedScenarios = [];
-  updateBadge();
-  refreshComparePanel();
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // MODE 1 — PROCESS SIMULATION
-// ═══════════════════════════════════════════════════════════════════
-function m1ToggleMode() {
-  const runs = document.querySelector('input[name="m1-mode"]:checked').value === 'runs';
-  const g = document.getElementById('m1-runs-group');
-  g.style.opacity = runs ? '1' : '0.4';
-  g.style.pointerEvents = runs ? '' : 'none';
+// ═══════════════════════════════════════════════════
+function m1ToggleMode(){const runs=document.querySelector('input[name="m1-mode"]:checked').value==='runs';const g=document.getElementById('m1-runs-group');g.style.opacity=runs?'1':'0.4';g.style.pointerEvents=runs?'':'none';}
+function renderM1Charts(){
+  const r=lastResults.m1;if(!r)return;
+  const nb=getBins('m1');
+  plotDistribution('m1-chart1',r.obs,r.lsl,r.usl,'Distribution of Simulated Observations','#5BA8D4','Measured Value',nb);
+  const chart2Wrap=document.getElementById('m1-chart2-wrap');
+  if(r.simMode==='runs'&&r.runMeans&&r.runMeans.length>0){chart2Wrap.style.display='';plotDistribution('m1-chart2',r.runMeans,null,null,'Distribution of Subgroup Means (X̄)','#D4540F','Subgroup Mean (X̄)',nb);}
+  else{chart2Wrap.style.display='none';}
 }
-
-function runMode1() {
+function runMode1(){
   clearAlerts();
-  const mu   = parseFloat(document.getElementById('m1-mean').value);
-  const sig  = parseFloat(document.getElementById('m1-std').value);
-  const dist = document.getElementById('m1-dist').value;
-  const lslEn = document.getElementById('m1-lsl-en').checked;
-  const uslEn = document.getElementById('m1-usl-en').checked;
-  const lsl = lslEn ? parseFloat(document.getElementById('m1-lsl').value) : null;
-  const usl = uslEn ? parseFloat(document.getElementById('m1-usl').value) : null;
-  const simMode = document.querySelector('input[name="m1-mode"]:checked').value;
-  const nObs  = parseInt(document.getElementById('m1-nobs').value);
-  const nRuns = parseInt(document.getElementById('m1-nruns').value);
-  const nSim  = parseInt(document.getElementById('m1-nsim').value);
-
-  if (sig <= 0) { showAlert('σ must be > 0', 'error'); return; }
-  if (lsl != null && usl != null && lsl >= usl) { showAlert('LSL must be < USL', 'error'); return; }
-
-  initRNG();
-
-  let allObs = [], runMeans = [];
-  try {
-    for (let s = 0; s < nSim; s++) {
-      if (simMode === 'obs') {
-        const obs = sampleDist(dist, mu, sig, nObs);
-        for (const v of obs) allObs.push(v);
-      } else {
-        for (let r = 0; r < nRuns; r++) {
-          const obs = sampleDist(dist, mu, sig, nObs);
-          let sm = 0; for (const v of obs) { allObs.push(v); sm += v; }
-          runMeans.push(sm / nObs);
-        }
-      }
+  const mu=parseFloat(document.getElementById('m1-mean').value);
+  const sig=parseFloat(document.getElementById('m1-std').value);
+  const dist=document.getElementById('m1-dist').value;
+  const simName=document.getElementById('m1-name').value||'Process';
+  const lslEn=document.getElementById('m1-lsl-en').checked,uslEn=document.getElementById('m1-usl-en').checked;
+  const lsl=lslEn?parseFloat(document.getElementById('m1-lsl').value):null;
+  const usl=uslEn?parseFloat(document.getElementById('m1-usl').value):null;
+  const simMode=document.querySelector('input[name="m1-mode"]:checked').value;
+  const nObs=parseInt(document.getElementById('m1-nobs').value);
+  const nRuns=parseInt(document.getElementById('m1-nruns').value);
+  const nSim=parseInt(document.getElementById('m1-nsim').value);
+  if(sig<=0){showAlert('σ must be > 0','error');return;}
+  if(lsl!=null&&usl!=null&&lsl>=usl){showAlert('LSL must be < USL','error');return;}
+  initRNG('m1-seed');
+  let allObs=[],runMeans=[];
+  try{
+    for(let s=0;s<nSim;s++){
+      if(simMode==='obs'){const obs=sampleDist(dist,mu,sig,nObs);for(const v of obs)allObs.push(v);}
+      else{for(let r=0;r<nRuns;r++){const obs=sampleDist(dist,mu,sig,nObs);let sm=0;for(const v of obs){allObs.push(v);sm+=v;}runMeans.push(sm/nObs);}}
     }
-  } catch(e) { showAlert(`Simulation error: ${e.message}`, 'error'); return; }
-
-  const allArr = new Float64Array(allObs);
-  const bs  = basicStats(allArr);
-  const ym  = yieldMetrics(allArr, lsl, usl);
-  const cap = processCap(allArr, lsl, usl);
-
-  lastResults.m1 = { _label: `Process | ${dist} μ=${mu} σ=${sig}`, _mode: 'm1',
-                     obs: allArr, runMeans: new Float64Array(runMeans),
-                     bs, ym, cap, lsl, usl, dist, mu, sig };
-
-  // KPIs
-  renderKPIs('m1-kpis', [
-    { label: 'Yield (%)',  value: fmt(ym['Yield (%)'], 4),   type: ym['Yield (%)'] > 99 ? 'success' : ym['Yield (%)'] > 90 ? 'warning' : 'danger' },
-    { label: 'DPMO',       value: fmt(ym.DPMO, 0),            type: '' },
-    { label: 'Defect Rate',value: fmt(ym['Defect Rate'], 5),  type: '' },
-    { label: 'Cpk',        value: cap.Cpk != null ? fmt(cap.Cpk) : '—', type: '' },
-    { label: 'Mean (obs)', value: fmt(bs.Mean, 4),             type: '' },
-    { label: 'Std Dev',    value: fmt(bs['Std Dev'], 4),       type: '' },
+  }catch(e){showAlert(`Simulation error: ${e.message}`,'error');return;}
+  const allArr=new Float64Array(allObs);
+  const bs=basicStats(allArr),ym=yieldMetrics(allArr,lsl,usl),cap=processCap(allArr,lsl,usl);
+  lastResults.m1={_label:`${simName} | ${dist}`,obs:allArr,runMeans:new Float64Array(runMeans),simMode,bs,ym,cap,lsl,usl,dist,mu,sig};
+  // Input Summary chips
+  document.getElementById('m1-summary-chips').innerHTML=[
+    chip('Name',simName),chip('Distribution',dist),chip('μ',mu),chip('σ',sig),
+    lsl!=null?chip('LSL',lsl,'warn'):'',usl!=null?chip('USL',usl,'warn'):'',
+    chip('Mode',simMode==='obs'?'Observations':'Runs'),chip('N obs',nObs),chip('Simulations',nSim),
+  ].join('');
+  renderKPIs('m1-kpis',[
+    {label:'Yield (%)',value:fmt(ym['Yield (%)'],4),type:ym['Yield (%)']>99?'success':ym['Yield (%)']>90?'warning':'danger'},
+    {label:'DPMO',value:fmt(ym.DPMO,0),type:''},
+    {label:'Defect Rate',value:fmt(ym['Defect Rate'],5),type:''},
+    {label:'Cpk',value:cap.Cpk!=null?fmt(cap.Cpk):'—',type:cap.Cpk!=null&&cap.Cpk>=1.33?'success':cap.Cpk!=null&&cap.Cpk>=1?'warning':'danger'},
+    {label:'Mean',value:fmt(bs.Mean,4),type:''},
+    {label:'Std Dev',value:fmt(bs['Std Dev'],4),type:''},
   ]);
-
-  // Charts
-  plotDistribution('m1-chart1', allArr, lsl, usl, 'Distribution of Simulated Observations', '#2563EB', 'Measured Value');
-
-  const chart2Wrap = document.getElementById('m1-chart2-wrap');
-  if (simMode === 'runs' && runMeans.length > 0) {
-    chart2Wrap.style.display = '';
-    const rmArr = new Float64Array(runMeans);
-    plotDistribution('m1-chart2', rmArr, null, null, 'Distribution of Subgroup Means (X̄)', '#F97316', 'Subgroup Mean (X̄)');
-  } else {
-    chart2Wrap.style.display = 'none';
-  }
-
-  // Stats
-  renderStatsTable('m1-stats-obs', bs);
-  renderStatsTable('m1-stats-cap', { ...ym, ...cap });
-
-  showResults('m1-results');
+  renderM1Charts();
+  renderMetrics('m1-stats-obs',bs);
+  // Capability section: only indices + defect counts (yield/DPMO already in KPI strip)
+  const m1CapDisplay={...cap};
+  if(ym['Out of Spec']!=null)m1CapDisplay['Out of Spec']=ym['Out of Spec'];
+  if(lsl!=null&&ym['Below LSL']!=null)m1CapDisplay['Below LSL']=ym['Below LSL'];
+  if(usl!=null&&ym['Above USL']!=null)m1CapDisplay['Above USL']=ym['Above USL'];
+  renderMetrics('m1-stats-cap',m1CapDisplay);
+  showResults('m1-welcome','m1-results');
 }
+function m1Export(type){const r=lastResults.m1;if(!r)return;if(type==='obs'){downloadCSV([['observation']].concat(Array.from(r.obs).map(v=>[v])),'mode1_observations.csv');}else{downloadCSV(Object.entries({...r.bs,...r.ym,...r.cap}).map(([k,v])=>({Metric:k,Value:v})),'mode1_statistics.csv');}}
 
-function m1Export(type) {
-  const r = lastResults.m1;
-  if (!r) return;
-  if (type === 'obs') {
-    const rows = [['observation']].concat(Array.from(r.obs).map(v => [v]));
-    downloadCSV(rows, 'mode1_observations.csv');
-  } else {
-    const data = Object.entries({ ...r.bs, ...r.ym, ...r.cap })
-      .map(([k, v]) => ({ Metric: k, Value: v }));
-    downloadCSV(data, 'mode1_statistics.csv');
-  }
+// ═══════════════════════════════════════════════════
+// MODE 2 — INDEPENDENT BINARY EVENTS
+// ═══════════════════════════════════════════════════
+let m2Events=[{name:'Event 1',prob:0.05},{name:'Event 2',prob:0.03},{name:'Event 3',prob:0.02}];
+function m2SetCount(n){n=Math.max(1,Math.min(20,n));while(m2Events.length<n)m2Events.push({name:`Event ${m2Events.length+1}`,prob:0.01});while(m2Events.length>n)m2Events.pop();document.getElementById('m2-n-types').value=n;m2RenderEditor();}
+function m2RenderEditor(){
+  document.getElementById('m2-event-body').innerHTML=m2Events.map((d,i)=>`<tr>
+    <td><input type="text" value="${d.name}" onchange="m2Events[${i}].name=this.value"></td>
+    <td><input type="number" value="${d.prob}" min="0" max="1" step="0.001" style="width:80px" onchange="m2Events[${i}].prob=parseFloat(this.value)||0"></td>
+    <td><button class="del-btn" onclick="m2DeleteEvent(${i})">✕</button></td>
+  </tr>`).join('');
+  document.getElementById('m2-n-types').value=m2Events.length;
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// MODE 2 — INDEPENDENT DEFECTS
-// ═══════════════════════════════════════════════════════════════════
-let m2Defects = [
-  { name: 'Surface Scratch',   prob: 0.05 },
-  { name: 'Dimensional Error', prob: 0.03 },
-  { name: 'Missing Label',     prob: 0.02 },
-];
-
-function m2RenderEditor() {
-  const c = document.getElementById('m2-defect-editor');
-  c.innerHTML = m2Defects.map((d, i) => `
-    <div class="editor-row defect-row">
-      <input type="text" value="${d.name}" onchange="m2Defects[${i}].name=this.value" placeholder="Defect name">
-      <input type="number" value="${d.prob}" min="0" max="1" step="0.001"
-             onchange="m2Defects[${i}].prob=parseFloat(this.value)||0" placeholder="0.050">
-      <button class="del-btn" onclick="m2DeleteDefect(${i})">✕</button>
-    </div>`).join('');
-}
-function m2AddDefect() {
-  m2Defects.push({ name: `Defect ${m2Defects.length + 1}`, prob: 0.01 });
-  m2RenderEditor();
-}
-function m2RemoveDefect() {
-  if (m2Defects.length > 1) { m2Defects.pop(); m2RenderEditor(); }
-}
-function m2DeleteDefect(i) {
-  m2Defects.splice(i, 1); m2RenderEditor();
-}
-
-function runMode2() {
+function m2AddEvent(){m2Events.push({name:`Event ${m2Events.length+1}`,prob:0.01});m2RenderEditor();}
+function m2RemoveEvent(){if(m2Events.length>1){m2Events.pop();m2RenderEditor();}}
+function m2DeleteEvent(i){m2Events.splice(i,1);m2RenderEditor();}
+function runMode2(){
   clearAlerts();
-  // Re-read current values from DOM (in case user edited without onchange firing)
-  document.querySelectorAll('#m2-defect-editor .editor-row').forEach((row, i) => {
-    if (m2Defects[i]) {
-      m2Defects[i].name = row.querySelector('input[type=text]').value;
-      m2Defects[i].prob = parseFloat(row.querySelector('input[type=number]').value) || 0;
-    }
+  document.querySelectorAll('#m2-event-body tr').forEach((row,i)=>{if(m2Events[i]){m2Events[i].name=row.querySelector('input[type=text]').value;m2Events[i].prob=parseFloat(row.querySelector('input[type=number]').value)||0;}});
+  const nUnits=parseInt(document.getElementById('m2-nunits').value);
+  const nSim=parseInt(document.getElementById('m2-nsim').value);
+  const thrEn=document.getElementById('m2-thr-en').checked;
+  const thr=thrEn?parseInt(document.getElementById('m2-thr').value):null;
+  const simName=document.getElementById('m2-name').value||'Ind. Events';
+  for(const d of m2Events)if(d.prob<0||d.prob>1){showAlert(`P(${d.name}) must be in [0,1]`,'error');return;}
+  initRNG('m2-seed');
+  const probs=m2Events.map(d=>d.prob),nTypes=probs.length;
+  const totalEvents=new Int32Array(nSim),totalAffected=new Int32Array(nSim);
+  const perTypeCounts=Array.from({length:nTypes},()=>new Int32Array(nSim));
+  for(let s=0;s<nSim;s++){let evCnt=0,affCnt=0;for(let u=0;u<nUnits;u++){let ue=0;for(let k=0;k<nTypes;k++)if(RNG.next()<probs[k]){ue++;perTypeCounts[k][s]++;}evCnt+=ue;if(ue>0)affCnt++;}totalEvents[s]=evCnt;totalAffected[s]=affCnt;}
+  const pUnion=1-probs.reduce((acc,p)=>acc*(1-p),1);
+  const meanAff=arr_mean(Array.from(totalAffected)),affRate=meanAff/nUnits,dpmo=affRate*1e6;
+  lastResults.m2={_label:`${simName} | ${nTypes} types`,totalDefects:totalEvents,totalDefective:totalAffected,perTypeCounts,events:m2Events.map(d=>({...d})),pUnion,defectiveRate:affRate,dpmo,yieldVal:1-affRate,nUnits,nSim};
+  document.getElementById('m2-summary-chips').innerHTML=[
+    chip('Name',simName),chip('Event types',nTypes),chip('Units/sim',nUnits),chip('Simulations',nSim),
+    chip('P(any event)',pUnion.toFixed(4)),
+  ].join('');
+  renderKPIs('m2-kpis',[
+    {label:'Yield (%)',value:fmt((1-affRate)*100,4),type:(1-affRate)>0.99?'success':'warning'},
+    {label:'Affected Rate',value:fmt(affRate,5),type:''},
+    {label:'DPMO',value:fmt(dpmo,1),type:''},
+    {label:'P(any event)',value:fmt(pUnion,4),type:''},
+    {label:'E[Affected/Sim]',value:fmt(nUnits*pUnion,2),type:''},
+    {label:'E[Events/Sim]',value:fmt(nUnits*arr_sum(probs),2),type:''},
+  ]);
+  const thrDiv=document.getElementById('m2-thr-result');
+  if(thr!=null){const pEx=Array.from(totalEvents).filter(v=>v>thr).length/nSim;const pEx2=Array.from(totalAffected).filter(v=>v>thr).length/nSim;thrDiv.innerHTML=`<div class="alert alert-info">Threshold=${thr}: P(events>${thr})=<strong>${pEx.toFixed(4)}</strong> · P(affected>${thr})=<strong>${pEx2.toFixed(4)}</strong></div>`;}else thrDiv.innerHTML='';
+  plotDualHistogram('m2-chart1',totalEvents,totalAffected,nUnits,'Event Simulation Distribution');
+  const BCOLS=['#1578BE','#D4540F','#198754','#7C3AED','#EC4899','#14B8A6'];
+  plt('m2-chart2',[{x:probs,y:m2Events.map(d=>d.name),type:'bar',orientation:'h',marker:{color:BCOLS.slice(0,nTypes)},text:probs.map(p=>p.toFixed(4)),textposition:'outside'}],{title:'P(event) by Event Type',xaxis:{title:'P(event)',range:[0,Math.min(Math.max(...probs)*1.5,1)]},height:Math.max(260,nTypes*42+110)});
+  renderMetrics('m2-stats-def',basicStats(new Float64Array(totalEvents)));
+  renderMetrics('m2-stats-dfu',basicStats(new Float64Array(totalAffected)));
+  const ptotal=arr_sum(probs);
+  renderDataTable('m2-per-event-tbl',['Event Type','P(event)','E[Count/Sim]','Observed Mean/Sim','% Share'],m2Events.map((d,k)=>[d.name,d.prob.toFixed(4),(nUnits*d.prob).toFixed(2),arr_mean(Array.from(perTypeCounts[k])).toFixed(2),(ptotal>0?d.prob/ptotal*100:0).toFixed(2)+'%']));
+  showResults('m2-welcome','m2-results');
+}
+function m2Export(type){const r=lastResults.m2;if(!r)return;if(type==='sim'){const rows=[['simulation','total_events','total_affected']];for(let i=0;i<r.nSim;i++)rows.push([i+1,r.totalDefects[i],r.totalDefective[i]]);downloadCSV(rows,'mode2_simulation.csv');}else{const rows=[['event','probability','expected_per_sim','observed_mean_per_sim']];r.events.forEach((d,k)=>rows.push([d.name,d.prob,r.nUnits*d.prob,arr_mean(Array.from(r.perTypeCounts[k])).toFixed(4)]));downloadCSV(rows,'mode2_per_event.csv');}}
+
+// ═══════════════════════════════════════════════════
+// MODE 3 — DEPENDENT BINARY EVENTS
+// ═══════════════════════════════════════════════════
+let m3Events=[{name:'Event 1',prob:0.10},{name:'Event 2',prob:0.08},{name:'Event 3',prob:0.06}];
+let m3Deps=[];
+function m3RebuildDeps(){
+  const n=m3Events.length,existing={};
+  m3Deps.forEach(d=>{existing[`${d.i}_${d.j}`]=d;});
+  m3Deps=[];
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const key=`${i}_${j}`,prev=existing[key],pij_indep=m3Events[i].prob*m3Events[j].prob;m3Deps.push({i,j,pij:prev?prev.pij:pij_indep,active:prev?prev.active:false});}
+}
+function m3SetCount(n){n=Math.max(2,Math.min(10,n));while(m3Events.length<n)m3Events.push({name:`Event ${m3Events.length+1}`,prob:Math.max(0.01,0.10-(m3Events.length*0.01))});while(m3Events.length>n)m3Events.pop();document.getElementById('m3-n-events').value=n;m3RebuildDeps();m3RenderEditor();}
+function m3AddEvent(){m3Events.push({name:`Event ${m3Events.length+1}`,prob:0.05});if(m3Events.length<=10){m3RebuildDeps();m3RenderEditor();}document.getElementById('m3-n-events').value=m3Events.length;}
+function m3RemoveEvent(){if(m3Events.length>2){m3Events.pop();m3RebuildDeps();m3RenderEditor();}document.getElementById('m3-n-events').value=m3Events.length;}
+function m3RenderEditor(){
+  document.getElementById('m3-event-body').innerHTML=m3Events.map((e,i)=>`<tr>
+    <td><input type="text" value="${e.name}" onchange="m3Events[${i}].name=this.value;m3RenderDepPairs()"></td>
+    <td><input type="number" value="${e.prob}" min="0" max="1" step="0.001" style="width:72px" onchange="m3Events[${i}].prob=parseFloat(this.value)||0;m3RenderDepPairs()"></td>
+  </tr>`).join('');
+  m3RenderDepPairs();
+}
+function m3RenderDepPairs(){
+  document.getElementById('m3-dep-pairs').innerHTML=m3Deps.map((dep,idx)=>{
+    const ni=m3Events[dep.i]?.name||`E${dep.i+1}`,nj=m3Events[dep.j]?.name||`E${dep.j+1}`;
+    const pi=m3Events[dep.i]?.prob||0,pj=m3Events[dep.j]?.prob||0;
+    const pIndep=(pi*pj).toFixed(5),pMin=Math.max(0,pi+pj-1).toFixed(4),pMax=Math.min(pi,pj).toFixed(4);
+    return `<div class="dep-pair">
+      <input type="checkbox" ${dep.active?'checked':''} onchange="m3Deps[${idx}].active=this.checked;m3SyncDepInput(${idx})">
+      <span class="dep-label" title="${ni} ∩ ${nj}">${ni} ∩ ${nj}</span>
+      <input type="number" class="dep-pij" id="dep-pij-${idx}" value="${dep.pij.toFixed(5)}" min="${pMin}" max="${pMax}" step="0.0001"
+        ${dep.active?'':'disabled'} onchange="m3Deps[${idx}].pij=parseFloat(this.value)||0">
+      <span class="dep-indep" title="Independence: ${pIndep}">≈${pIndep}</span>
+    </div>`;
+  }).join('');
+}
+function m3SyncDepInput(idx){const inp=document.getElementById(`dep-pij-${idx}`);if(inp)inp.disabled=!m3Deps[idx].active;}
+function m3ReadDOM(){
+  document.querySelectorAll('#m3-event-body tr').forEach((row,i)=>{if(m3Events[i]){m3Events[i].name=row.querySelector('input[type=text]').value;m3Events[i].prob=parseFloat(row.querySelector('input[type=number]').value)||0;}});
+  m3Deps.forEach((dep,idx)=>{const inp=document.getElementById(`dep-pij-${idx}`);if(inp)dep.pij=parseFloat(inp.value)||dep.pij;});
+}
+function m3SimulateUnit(){
+  const occurred=new Array(m3Events.length).fill(false);
+  for(let k=0;k<m3Events.length;k++){
+    const pk=m3Events[k].prob;
+    const activeDeps=m3Deps.filter(d=>d.active&&((d.j===k&&d.i<k)||(d.i===k&&d.j<k)));
+    if(activeDeps.length===0){occurred[k]=RNG.next()<pk;}
+    else{let pAdj=pk;for(const dep of activeDeps){const iOther=dep.i===k?dep.j:dep.i;const pOther=m3Events[iOther].prob;const pij=dep.pij;const cov=pij-pk*pOther;if(occurred[iOther]){if(pOther>0)pAdj+=cov/pOther;}else{if(pOther<1)pAdj-=cov/(1-pOther);}}pAdj=Math.max(0,Math.min(1,pAdj));occurred[k]=RNG.next()<pAdj;}
+  }
+  return occurred;
+}
+function runMode3(){
+  clearAlerts();m3ReadDOM();
+  const nUnits=parseInt(document.getElementById('m3-nunits').value);
+  const nSim=parseInt(document.getElementById('m3-nsim').value);
+  const simName=document.getElementById('m3-name').value||'Dep. Events';
+  const n=m3Events.length;
+  for(const[i,e]of m3Events.entries())if(e.prob<0||e.prob>1){showAlert(`P(${e.name}) must be in [0,1]`,'error');return;}
+  const activeDeps=m3Deps.filter(d=>d.active);
+  for(const dep of activeDeps){
+    const pi=m3Events[dep.i].prob,pj=m3Events[dep.j].prob,pij=dep.pij;
+    const lo=Math.max(0,pi+pj-1),hi=Math.min(pi,pj);
+    const ni=m3Events[dep.i].name,nj=m3Events[dep.j].name;
+    if(pij<lo-1e-7){showAlert(`P(${ni}∩${nj})=${pij.toFixed(5)} below min feasible (${lo.toFixed(5)})`,'error');return;}
+    if(pij>hi+1e-7){showAlert(`P(${ni}∩${nj})=${pij.toFixed(5)} exceeds min(P(${ni}),P(${nj}))=${hi.toFixed(5)}`,'error');return;}
+  }
+  initRNG('m3-seed');
+  const totalEvents=new Int32Array(nSim),totalAffected=new Int32Array(nSim);
+  for(let s=0;s<nSim;s++){let evCnt=0,affCnt=0;for(let u=0;u<nUnits;u++){const occ=m3SimulateUnit();const ne=occ.filter(Boolean).length;evCnt+=ne;if(ne>0)affCnt++;}totalEvents[s]=evCnt;totalAffected[s]=affCnt;}
+  const totalEventsInd=new Int32Array(nSim),totalAffectedInd=new Int32Array(nSim);
+  for(let s=0;s<nSim;s++){let evCnt=0,affCnt=0;for(let u=0;u<nUnits;u++){let ne=0;for(const e of m3Events)if(RNG.next()<e.prob)ne++;evCnt+=ne;if(ne>0)affCnt++;}totalEventsInd[s]=evCnt;totalAffectedInd[s]=affCnt;}
+  const meanAffDep=arr_mean(Array.from(totalAffected)),meanAffInd=arr_mean(Array.from(totalAffectedInd));
+  const yieldDep=1-meanAffDep/nUnits,yieldInd=1-meanAffInd/nUnits;
+  lastResults.m3={_label:`${simName} | ${n} events (${activeDeps.length} dep. pairs)`,
+    totalDefects:totalEvents,totalDefective:totalAffected,totalDefectsInd:totalEventsInd,totalDefectiveInd:totalAffectedInd,
+    yieldDep,yieldInd,meanAffDep,meanAffInd,n,nUnits,nSim,
+    events:m3Events.map(e=>({...e})),deps:m3Deps.map(d=>({...d})),activeDeps:activeDeps.length};
+  document.getElementById('m3-summary-chips').innerHTML=[
+    chip('Name',simName),chip('Events',n),chip('Dep. pairs',activeDeps.length),
+    chip('Units/sim',nUnits),chip('Simulations',nSim),
+  ].join('');
+  const deltaYield=yieldDep-yieldInd;
+  renderKPIs('m3-kpis',[
+    {label:'Yield — Dep.',value:fmt(yieldDep*100,4)+'%',type:yieldDep>0.99?'success':'warning'},
+    {label:'Yield — Ind.',value:fmt(yieldInd*100,4)+'%',type:''},
+    {label:'Aff. Rate — Dep.',value:fmt(meanAffDep/nUnits,5),type:''},
+    {label:'Aff. Rate — Ind.',value:fmt(meanAffInd/nUnits,5),type:''},
+    {label:'Active Dep. Pairs',value:activeDeps.length,type:''},
+    {label:'Δ Yield',value:(deltaYield>=0?'+':'')+fmt(deltaYield*100,4)+'%',type:deltaYield<-0.001?'danger':deltaYield>0.001?'success':''},
+  ]);
+  const deltaDiv=document.getElementById('m3-delta-info');
+  if(Math.abs(deltaYield)>0.0001){const dir=deltaYield<0?'WORSE':'BETTER',cls=deltaYield<0?'alert-warning':'alert-success';deltaDiv.innerHTML=`<div class="alert ${cls}">Dependency effect: yield is <strong>${dir}</strong> by <strong>${Math.abs(deltaYield*100).toFixed(4)}%</strong> vs. independence assumption.</div>`;}else deltaDiv.innerHTML='';
+  plt('m3-chart1',[
+    {x:Array.from(totalAffected),type:'histogram',histnorm:'probability',nbinsx:50,name:'Dependent',marker:{color:'#C0392B',opacity:0.65}},
+    {x:Array.from(totalAffectedInd),type:'histogram',histnorm:'probability',nbinsx:50,name:'Independent',marker:{color:'#1578BE',opacity:0.55}},
+  ],{title:'Affected Units: Dependent vs Independent (Overlay)',barmode:'overlay',xaxis:{title:'Affected units per simulation'},yaxis:{title:'Relative Frequency'}});
+  plotDualHistogram('m3-chart2',totalEvents,totalAffected,nUnits,'Dependent Model — Simulation Distribution');
+  const depRows=m3Deps.map(dep=>{
+    const ni=m3Events[dep.i]?.name||`E${dep.i+1}`,nj=m3Events[dep.j]?.name||`E${dep.j+1}`;
+    const pi=m3Events[dep.i].prob,pj=m3Events[dep.j].prob,pij=dep.active?dep.pij:pi*pj,cov=pij-pi*pj;
+    const dir=!dep.active?'(indep. assumed)':Math.abs(cov)<1e-8?'Neutral':cov>0?'Positive ↑':'Negative ↓';
+    return[`${ni} ∩ ${nj}`,pi.toFixed(4),pj.toFixed(4),pij.toFixed(5),(pi*pj).toFixed(5),cov.toFixed(6),dir];
   });
-
-  const nUnits = parseInt(document.getElementById('m2-nunits').value);
-  const nSim   = parseInt(document.getElementById('m2-nsim').value);
-  const thrEn  = document.getElementById('m2-thr-en').checked;
-  const thr    = thrEn ? parseInt(document.getElementById('m2-thr').value) : null;
-
-  for (const d of m2Defects) {
-    if (d.prob < 0 || d.prob > 1) { showAlert(`P(${d.name}) must be between 0 and 1`, 'error'); return; }
-  }
-
-  initRNG();
-  const probs = m2Defects.map(d => d.prob);
-  const nTypes = probs.length;
-  const totalDefects   = new Int32Array(nSim);
-  const totalDefective = new Int32Array(nSim);
-  const perTypeCounts  = Array.from({ length: nTypes }, () => new Int32Array(nSim));
-
-  for (let s = 0; s < nSim; s++) {
-    let defCnt = 0, dfvCnt = 0;
-    for (let u = 0; u < nUnits; u++) {
-      let unitDefects = 0;
-      for (let k = 0; k < nTypes; k++) {
-        if (RNG.next() < probs[k]) { unitDefects++; perTypeCounts[k][s]++; }
-      }
-      defCnt += unitDefects;
-      if (unitDefects > 0) dfvCnt++;
-    }
-    totalDefects[s] = defCnt;
-    totalDefective[s] = dfvCnt;
-  }
-
-  const pUnion = 1 - probs.reduce((acc, p) => acc * (1 - p), 1);
-  const meanDfv = arr_mean(Array.from(totalDefective));
-  const defectiveRate = meanDfv / nUnits;
-  const dpmo = defectiveRate * 1e6;
-
-  lastResults.m2 = { _label: `IndepDefects | ${nTypes} types`, _mode: 'm2',
-                     totalDefects, totalDefective, perTypeCounts,
-                     defects: m2Defects.map(d => ({...d})),
-                     pUnion, defectiveRate, dpmo, yieldVal: 1 - defectiveRate, nUnits, nSim };
-
-  // KPIs
-  renderKPIs('m2-kpis', [
-    { label: 'Yield (%)',     value: fmt((1 - defectiveRate) * 100, 4), type: (1 - defectiveRate) > 0.99 ? 'success' : 'warning' },
-    { label: 'Defective Rate', value: fmt(defectiveRate, 5), type: '' },
-    { label: 'DPMO',          value: fmt(dpmo, 1),           type: '' },
-    { label: 'P(union)',      value: fmt(pUnion, 4),          type: '' },
-    { label: 'E[Defective/Sim]', value: fmt(nUnits * pUnion, 2), type: '' },
-    { label: 'E[Defects/Sim]',   value: fmt(nUnits * arr_sum(probs), 2), type: '' },
+  renderDataTable('m3-dep-tbl',['Pair','P(i)','P(j)','P(i∩j)','P(i)×P(j)','Cov','Direction'],depRows);
+  renderDataTable('m3-cmp-tbl',['Metric','Dependent','Independent','Δ (Dep − Ind)'],[
+    ['Yield (%)',(yieldDep*100).toFixed(4),(yieldInd*100).toFixed(4),((yieldDep-yieldInd)*100).toFixed(4)],
+    ['Affected Rate',(meanAffDep/nUnits).toFixed(6),(meanAffInd/nUnits).toFixed(6),(((meanAffDep-meanAffInd)/nUnits)).toFixed(6)],
+    ['E[Affected/sim]',meanAffDep.toFixed(2),meanAffInd.toFixed(2),(meanAffDep-meanAffInd).toFixed(2)],
+    ['DPMO',((meanAffDep/nUnits)*1e6).toFixed(1),((meanAffInd/nUnits)*1e6).toFixed(1),'—'],
   ]);
-
-  // Threshold result
-  const thrDiv = document.getElementById('m2-thr-result');
-  if (thr != null) {
-    const pExcDef  = Array.from(totalDefects).filter(v => v > thr).length / nSim;
-    const pExcDfv  = Array.from(totalDefective).filter(v => v > thr).length / nSim;
-    thrDiv.innerHTML = `<div class="alert alert-info">
-      Threshold = <strong>${thr}</strong> →
-      P(total defects &gt; ${thr}) = <strong>${pExcDef.toFixed(4)}</strong> |
-      P(defective items &gt; ${thr}) = <strong>${pExcDfv.toFixed(4)}</strong>
-    </div>`;
-  } else { thrDiv.innerHTML = ''; }
-
-  // Charts
-  plotDualHistogram('m2-chart1', totalDefects, totalDefective, nUnits, 'Defect Simulation Distribution');
-  const barsColors = ['#2563EB','#F97316','#16A34A','#7C3AED','#EC4899','#14B8A6'];
-  plt('m2-chart2', [{
-    x: probs, y: m2Defects.map(d => d.name), type: 'bar', orientation: 'h',
-    marker: { color: barsColors.slice(0, nTypes) },
-    text: probs.map(p => p.toFixed(4)), textposition: 'outside',
-  }], { title: 'Probability by Defect Type', xaxis: { title: 'P(defect)', range: [0, Math.min(Math.max(...probs) * 1.4, 1)] },
-        height: Math.max(280, nTypes * 40 + 120) });
-
-  // Stats
-  const dsStats = basicStats(new Float64Array(totalDefects));
-  const dfvStats = basicStats(new Float64Array(totalDefective));
-  renderStatsTable('m2-stats-def', dsStats);
-  renderStatsTable('m2-stats-dfu', dfvStats);
-
-  // Per-defect table
-  const headers = ['Defect Type', 'P(defect)', 'Expected/Sim', 'Observed Mean/Sim', '% Contribution'];
-  const ptotal = arr_sum(probs);
-  const perRows = m2Defects.map((d, k) => [
-    d.name, d.prob.toFixed(4), (nUnits * d.prob).toFixed(2),
-    arr_mean(Array.from(perTypeCounts[k])).toFixed(2),
-    (ptotal > 0 ? d.prob / ptotal * 100 : 0).toFixed(2) + '%',
-  ]);
-  renderGenericTable('m2-per-defect-tbl', headers, perRows);
-
-  showResults('m2-results');
+  renderMetrics('m3-stats-def',basicStats(new Float64Array(totalEvents)));
+  renderMetrics('m3-stats-dfu',basicStats(new Float64Array(totalAffected)));
+  showResults('m3-welcome','m3-results');
 }
+function m3Export(type){const r=lastResults.m3;if(!r)return;if(type==='sim'){const rows=[['simulation','dep_events','dep_affected','ind_events','ind_affected']];for(let i=0;i<r.nSim;i++)rows.push([i+1,r.totalDefects[i],r.totalDefective[i],r.totalDefectsInd[i],r.totalDefectiveInd[i]]);downloadCSV(rows,'mode3_simulation.csv');}else{const rows=[['Metric','Dependent','Independent','Delta']];rows.push(['Yield (%)',r.yieldDep*100,r.yieldInd*100,(r.yieldDep-r.yieldInd)*100]);rows.push(['Affected Rate',r.meanAffDep/r.nUnits,r.meanAffInd/r.nUnits,'—']);downloadCSV(rows,'mode3_comparison.csv');}}
 
-function m2Export(type) {
-  const r = lastResults.m2; if (!r) return;
-  if (type === 'sim') {
-    const rows = [['simulation', 'total_defects', 'total_defective']];
-    for (let i = 0; i < r.nSim; i++) rows.push([i + 1, r.totalDefects[i], r.totalDefective[i]]);
-    downloadCSV(rows, 'mode2_simulation.csv');
-  } else {
-    const rows = [['defect', 'probability', 'expected_per_sim', 'observed_mean_per_sim']];
-    r.defects.forEach((d, k) => rows.push([d.name, d.prob, r.nUnits * d.prob, arr_mean(Array.from(r.perTypeCounts[k])).toFixed(4)]));
-    downloadCSV(rows, 'mode2_per_defect.csv');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// MODE 3 — DEPENDENT DEFECTS (JOINT PROBABILITIES)
-// ═══════════════════════════════════════════════════════════════════
-function m3GetND() { return parseInt(document.querySelector('input[name="m3-nd"]:checked').value); }
-
-function m3BuildUI() {
-  const nd = m3GetND();
-  const labels = ['A', 'B', 'C'].slice(0, nd);
-  const defVals  = [0.10, 0.08, 0.06];
-  const jointDefs = nd === 2
-    ? [{ id: 'm3-pab', label: 'P(A ∩ B)', val: 0.005, help: 'Must be ≤ min(P(A), P(B)). If = P(A)×P(B), defects are independent.' }]
-    : [
-        { id: 'm3-pab',  label: 'P(A ∩ B)',     val: 0.008 },
-        { id: 'm3-pac',  label: 'P(A ∩ C)',     val: 0.006 },
-        { id: 'm3-pbc',  label: 'P(B ∩ C)',     val: 0.005 },
-        { id: 'm3-pabc', label: 'P(A ∩ B ∩ C)', val: 0.001 },
-      ];
-
-  document.getElementById('m3-ui').innerHTML = `
-    <div class="card" style="margin-bottom:12px">
-      <div class="sec-hdr">Defect Names &amp; Marginal Probabilities</div>
-      <div class="input-grid cols-${nd}">
-        ${labels.map((l, i) => `
-          <div>
-            <div class="form-group"><label>Defect ${l} — Name</label>
-              <input type="text" id="m3-name-${i}" value="Defect ${l}"></div>
-            <div class="form-group"><label>P(${l})</label>
-              <input type="number" id="m3-p${l.toLowerCase()}" value="${defVals[i]}" min="0" max="1" step="0.001" format="0.4f"></div>
-          </div>`).join('')}
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:12px">
-      <div class="sec-hdr">Joint Probabilities</div>
-      <div class="input-grid cols-${nd === 2 ? 1 : 4}">
-        ${jointDefs.map(j => `
-          <div class="form-group">
-            <label>${j.label}</label>
-            <input type="number" id="${j.id}" value="${j.val}" min="0" max="1" step="0.001">
-            ${j.help ? `<span class="hint">${j.help}</span>` : ''}
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
-
-function m3BuildStateTable2(pa, pb, pab) {
-  return {
-    '(A✓, B✓)': pab,
-    '(A✓, B✗)': pa - pab,
-    '(A✗, B✓)': pb - pab,
-    '(A✗, B✗)': 1 - pa - pb + pab,
-  };
-}
-function m3BuildStateTable3(pa, pb, pc, pab, pac, pbc, pabc) {
-  return {
-    '(A✓,B✓,C✓)': pabc,
-    '(A✓,B✓,C✗)': pab  - pabc,
-    '(A✓,B✗,C✓)': pac  - pabc,
-    '(A✗,B✓,C✓)': pbc  - pabc,
-    '(A✓,B✗,C✗)': pa   - pab - pac + pabc,
-    '(A✗,B✓,C✗)': pb   - pab - pbc + pabc,
-    '(A✗,B✗,C✓)': pc   - pac - pbc + pabc,
-    '(A✗,B✗,C✗)': 1 - pa - pb - pc + pab + pac + pbc - pabc,
-  };
-}
-
-function m3ValidateTable(table) {
-  const errors = [];
-  let total = 0;
-  for (const [state, p] of Object.entries(table)) {
-    if (p < -1e-9) errors.push(`P${state} = ${p.toFixed(6)} is negative — inconsistent probabilities.`);
-    total += p;
-  }
-  if (Math.abs(total - 1) > 1e-5) errors.push(`State probabilities sum to ${total.toFixed(6)} ≠ 1.0`);
-  return errors;
-}
-
-function runMode3() {
-  clearAlerts();
-  const nd = m3GetND();
-  const names = Array.from({ length: nd }, (_, i) => document.getElementById(`m3-name-${i}`)?.value || `Defect ${['A','B','C'][i]}`);
-  const pa = parseFloat(document.getElementById('m3-pa')?.value) || 0;
-  const pb = parseFloat(document.getElementById('m3-pb')?.value) || 0;
-  const pc = nd === 3 ? parseFloat(document.getElementById('m3-pc')?.value) || 0 : 0;
-  const pab  = parseFloat(document.getElementById('m3-pab')?.value)  || 0;
-  const pac  = nd === 3 ? parseFloat(document.getElementById('m3-pac')?.value)  || 0 : 0;
-  const pbc  = nd === 3 ? parseFloat(document.getElementById('m3-pbc')?.value)  || 0 : 0;
-  const pabc = nd === 3 ? parseFloat(document.getElementById('m3-pabc')?.value) || 0 : 0;
-  const nUnits = parseInt(document.getElementById('m3-nunits').value);
-  const nSim   = parseInt(document.getElementById('m3-nsim').value);
-
-  const margProbs = [pa, pb, pc].slice(0, nd);
-  for (const [i, p] of margProbs.entries()) {
-    if (p < 0 || p > 1) { showAlert(`Marginal P(${names[i]}) must be between 0 and 1`, 'error'); return; }
-  }
-
-  const stateTable = nd === 2
-    ? m3BuildStateTable2(pa, pb, pab)
-    : m3BuildStateTable3(pa, pb, pc, pab, pac, pbc, pabc);
-
-  const errors = m3ValidateTable(stateTable);
-  if (errors.length) { errors.forEach(e => showAlert(e, 'error')); return; }
-
-  initRNG();
-  const stateNames  = Object.keys(stateTable);
-  let stateProbs = Object.values(stateTable).map(p => Math.max(p, 0));
-  const ptotal = arr_sum(stateProbs); stateProbs = stateProbs.map(p => p / ptotal);
-  const defectsPerState   = stateNames.map(s => (s.match(/✓/g) || []).length);
-  const defectivePerState = stateNames.map(s => s.includes('✓'));
-
-  // Build CDF for sampling
-  const cdf = []; let cum = 0;
-  for (const p of stateProbs) { cum += p; cdf.push(cum); }
-
-  function sampleState() {
-    const u = RNG.next();
-    for (let i = 0; i < cdf.length; i++) if (u <= cdf[i]) return i;
-    return cdf.length - 1;
-  }
-
-  const totalDefects   = new Int32Array(nSim);
-  const totalDefective = new Int32Array(nSim);
-  for (let s = 0; s < nSim; s++) {
-    let defCnt = 0, dfvCnt = 0;
-    for (let u = 0; u < nUnits; u++) {
-      const st = sampleState();
-      defCnt += defectsPerState[st];
-      if (defectivePerState[st]) dfvCnt++;
-    }
-    totalDefects[s] = defCnt;
-    totalDefective[s] = dfvCnt;
-  }
-
-  // Independent comparison (same marginal probs)
-  const totalDefectsInd   = new Int32Array(nSim);
-  const totalDefectiveInd = new Int32Array(nSim);
-  for (let s = 0; s < nSim; s++) {
-    let defCnt = 0, dfvCnt = 0;
-    for (let u = 0; u < nUnits; u++) {
-      let d = 0;
-      for (const p of margProbs) if (RNG.next() < p) d++;
-      defCnt += d; if (d > 0) dfvCnt++;
-    }
-    totalDefectsInd[s] = defCnt;
-    totalDefectiveInd[s] = dfvCnt;
-  }
-
-  // P(union)
-  const pUnionJoint = 1 - Math.max(stateProbs[stateNames.findIndex(s => !s.includes('✓'))], 0);
-  const pUnionIndep = 1 - margProbs.reduce((acc, p) => acc * (1 - p), 1);
-
-  const meanDfvJoint = arr_mean(Array.from(totalDefective));
-  const meanDfvIndep = arr_mean(Array.from(totalDefectiveInd));
-  const yieldJoint = 1 - meanDfvJoint / nUnits;
-  const yieldIndep = 1 - meanDfvIndep / nUnits;
-
-  lastResults.m3 = {
-    _label: `DepDefects | ${nd} types`, _mode: 'm3',
-    totalDefects, totalDefective, totalDefectsInd, totalDefectiveInd,
-    pUnionJoint, pUnionIndep, yieldJoint, yieldIndep,
-    stateTable, stateNames, stateProbs,
-    names, margProbs, nd, nUnits, nSim,
-  };
-
-  // KPIs
-  const deltaYield = yieldJoint - yieldIndep;
-  renderKPIs('m3-kpis', [
-    { label: 'Yield — Dependent',   value: fmt(yieldJoint * 100, 4) + '%', type: yieldJoint > 0.99 ? 'success' : 'warning' },
-    { label: 'Yield — Independent', value: fmt(yieldIndep * 100, 4) + '%', type: '' },
-    { label: 'P(union) Dep.',       value: fmt(pUnionJoint, 4), type: '' },
-    { label: 'P(union) Indep.',     value: fmt(pUnionIndep, 4), type: '' },
-    { label: 'Def. Rate Dep.',      value: fmt(meanDfvJoint / nUnits, 5), type: '' },
-    { label: 'Def. Rate Indep.',    value: fmt(meanDfvIndep / nUnits, 5), type: '' },
-  ]);
-
-  const deltaDiv = document.getElementById('m3-delta-info');
-  if (Math.abs(deltaYield) > 0.0001) {
-    const dir = deltaYield < 0 ? 'WORSE' : 'BETTER';
-    const cls = deltaYield < 0 ? 'alert-warning' : 'alert-success';
-    deltaDiv.innerHTML = `<div class="alert ${cls}">
-      Dependency effect: Yield is <strong>${dir}</strong> by <strong>${Math.abs(deltaYield * 100).toFixed(4)}%</strong> vs. the independence assumption.
-    </div>`;
-  } else { deltaDiv.innerHTML = ''; }
-
-  // Charts
-  const C_DANGER = '#EF4444', C_BLUE = '#2563EB';
-  plt('m3-chart1', [
-    { x: Array.from(totalDefective), type: 'histogram', histnorm: 'probability', nbinsx: 40,
-      name: 'Dependent (joint)', marker: { color: C_DANGER, opacity: 0.65 } },
-    { x: Array.from(totalDefectiveInd), type: 'histogram', histnorm: 'probability', nbinsx: 40,
-      name: 'Independent', marker: { color: C_BLUE, opacity: 0.55 } },
-  ], { title: 'Defective Items: Dependent vs Independent', barmode: 'overlay',
-       xaxis: { title: 'Defective items per simulation' }, yaxis: { title: 'Relative Frequency' } });
-
-  plotDualHistogram('m3-chart2', totalDefects, totalDefective, nUnits, 'Dependent Model — Simulation Distribution');
-
-  // State table
-  const stateHeaders = ['State', 'P(state)', 'Defective?'];
-  const stateRows = stateNames.map((sn, i) => [sn, stateProbs[i].toFixed(6), sn.includes('✓') ? '✓ Yes' : '✗ No']);
-  renderGenericTable('m3-state-tbl', stateHeaders, stateRows);
-
-  // Comparison table
-  const cmpHeaders = ['Metric', 'Dependent', 'Independent', 'Δ (Dep − Ind)'];
-  const cmpRows = [
-    ['P(union)',              pUnionJoint.toFixed(4),          pUnionIndep.toFixed(4),          (pUnionJoint - pUnionIndep).toFixed(4)],
-    ['E[defective/sim]',     (nUnits * pUnionJoint).toFixed(2),(nUnits * pUnionIndep).toFixed(2),((nUnits*(pUnionJoint-pUnionIndep))).toFixed(2)],
-    ['Yield (%)',            (yieldJoint*100).toFixed(4),      (yieldIndep*100).toFixed(4),     ((yieldJoint-yieldIndep)*100).toFixed(4)],
-    ['Defective Rate',       (meanDfvJoint/nUnits).toFixed(6), (meanDfvIndep/nUnits).toFixed(6),(((meanDfvJoint-meanDfvIndep)/nUnits)).toFixed(6)],
-  ];
-  renderGenericTable('m3-cmp-tbl', cmpHeaders, cmpRows);
-
-  // Stats
-  renderStatsTable('m3-stats-def', basicStats(new Float64Array(totalDefects)));
-  renderStatsTable('m3-stats-dfu', basicStats(new Float64Array(totalDefective)));
-
-  showResults('m3-results');
-}
-
-function m3Export(type) {
-  const r = lastResults.m3; if (!r) return;
-  if (type === 'sim') {
-    const rows = [['simulation','dep_total_defects','dep_total_defective','indep_total_defects','indep_total_defective']];
-    for (let i = 0; i < r.nSim; i++) rows.push([i+1, r.totalDefects[i], r.totalDefective[i], r.totalDefectsInd[i], r.totalDefectiveInd[i]]);
-    downloadCSV(rows, 'mode3_simulation.csv');
-  } else {
-    const rows = [['Metric','Dependent','Independent','Delta']];
-    rows.push(['P(union)', r.pUnionJoint, r.pUnionIndep, r.pUnionJoint - r.pUnionIndep]);
-    rows.push(['Yield (%)', r.yieldJoint*100, r.yieldIndep*100, (r.yieldJoint-r.yieldIndep)*100]);
-    downloadCSV(rows, 'mode3_comparison.csv');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // MODE 4 — TOLERANCE STACK-UP
-// ═══════════════════════════════════════════════════════════════════
-let m4Components = [
-  { name: 'Shaft OD', mean: 25.00, std: 0.05, dist: 'Normal',  sign: 1  },
-  { name: 'Bore ID',  mean: 25.20, std: 0.04, dist: 'Normal',  sign: -1 },
-  { name: 'Spacer',   mean:  2.00, std: 0.02, dist: 'Uniform', sign: 1  },
-];
-const DISTS = ['Normal','Lognormal','Uniform','Triangular','Weibull'];
-
-function m4RenderEditor() {
-  const c = document.getElementById('m4-comp-editor');
-  c.innerHTML = m4Components.map((comp, i) => `
-    <div class="editor-row comp-row">
-      <input type="text"   value="${comp.name}" onchange="m4Components[${i}].name=this.value" placeholder="Component name">
-      <input type="number" value="${comp.mean}" step="any" onchange="m4Components[${i}].mean=parseFloat(this.value)||0" placeholder="25.00">
-      <input type="number" value="${comp.std}"  min="0.0001" step="any" onchange="m4Components[${i}].std=parseFloat(this.value)||0.01" placeholder="0.05">
-      <select onchange="m4Components[${i}].dist=this.value">
-        ${DISTS.map(d => `<option ${d === comp.dist ? 'selected' : ''}>${d}</option>`).join('')}
-      </select>
-      <select onchange="m4Components[${i}].sign=parseInt(this.value)">
-        <option value="1"  ${comp.sign === 1  ? 'selected' : ''}>+1</option>
-        <option value="-1" ${comp.sign === -1 ? 'selected' : ''}>−1</option>
-      </select>
-      <button class="del-btn" onclick="m4DeleteComp(${i})">✕</button>
-    </div>`).join('');
+// ═══════════════════════════════════════════════════
+let m4Components=[{name:'Component 1',mean:25.00,std:0.05,dist:'Normal',sign:1},{name:'Component 2',mean:25.20,std:0.04,dist:'Normal',sign:-1},{name:'Component 3',mean:2.00,std:0.02,dist:'Uniform',sign:1}];
+const DISTS=['Normal','Lognormal','Uniform','Triangular','Weibull'];
+function m4RenderEditor(){
+  document.getElementById('m4-comp-body').innerHTML=m4Components.map((c,i)=>`<tr>
+    <td><input type="text" value="${c.name}" style="width:90px" onchange="m4Components[${i}].name=this.value"></td>
+    <td><input type="number" value="${c.mean}" step="any" style="width:62px" onchange="m4Components[${i}].mean=parseFloat(this.value)||0"></td>
+    <td><input type="number" value="${c.std}" min="0.0001" step="any" style="width:55px" onchange="m4Components[${i}].std=parseFloat(this.value)||0.01"></td>
+    <td><select style="width:82px" onchange="m4Components[${i}].dist=this.value">${DISTS.map(d=>`<option ${d===c.dist?'selected':''}>${d}</option>`).join('')}</select></td>
+    <td><select style="width:46px" onchange="m4Components[${i}].sign=parseInt(this.value)"><option value="1" ${c.sign===1?'selected':''}>+1</option><option value="-1" ${c.sign===-1?'selected':''}>−1</option></select></td>
+    <td><button class="del-btn" onclick="m4DeleteComp(${i})">✕</button></td>
+  </tr>`).join('');
 }
-
-function m4AddComp() {
-  m4Components.push({ name: `Comp ${m4Components.length + 1}`, mean: 10, std: 0.1, dist: 'Normal', sign: 1 });
-  m4RenderEditor();
+function m4AddComp(){m4Components.push({name:`Component ${m4Components.length+1}`,mean:10,std:0.1,dist:'Normal',sign:1});m4RenderEditor();}
+function m4RemoveComp(){if(m4Components.length>1){m4Components.pop();m4RenderEditor();}}
+function m4DeleteComp(i){m4Components.splice(i,1);m4RenderEditor();}
+function m4ReadDOM(){document.querySelectorAll('#m4-comp-body tr').forEach((row,i)=>{if(!m4Components[i])return;const inp=row.querySelectorAll('input'),sel=row.querySelectorAll('select');m4Components[i].name=inp[0].value;m4Components[i].mean=parseFloat(inp[1].value)||0;m4Components[i].std=parseFloat(inp[2].value)||0.01;m4Components[i].dist=sel[0].value;m4Components[i].sign=parseInt(sel[1].value);});}
+function renderM4Chart(){
+  const r=lastResults.m4;if(!r)return;
+  const nb=getBins('m4');
+  const dMin=arr_min(Array.from(r.stack)),dMax=arr_max(Array.from(r.stack));
+  const{shapes,ann}=specShapes(r.lsl,r.usl,dMin,dMax);
+  const mu=r.bs.Mean,sigma=r.bs['Std Dev'];
+  shapes.push({type:'line',x0:mu,x1:mu,y0:0,y1:1,yref:'paper',line:{color:'#198754',width:2,dash:'dot'}});
+  ann.push({x:mu,y:0.92,yref:'paper',text:`μ=${mu.toFixed(3)}`,showarrow:false,font:{color:'#198754',size:11},xanchor:'left'});
+  const CCOLS=['#D4540F','#198754','#7C3AED','#EC4899','#14B8A6','#F59E0B'];
+  const traces=[{x:Array.from(r.stack),type:'histogram',histnorm:'probability density',nbinsx:nb,name:'Stack Output Y',marker:{color:'#5BA8D4',opacity:0.65,line:{color:'rgba(255,255,255,0.8)',width:0.8}}},normalFitCurve(r.stack)];
+  r.signedSamples.forEach((col,j)=>{const ca=Array.from(col),cm=arr_mean(ca),cs=arr_std(ca),x=[],y=[];for(let i=0;i<=300;i++){const xi=(cm-4*cs)+8*cs*i/300;x.push(xi);y.push(normPDF(xi,cm,cs));}traces.push({x,y,type:'scatter',mode:'lines',name:`${r.components[j].name} (KDE)`,line:{color:CCOLS[j%CCOLS.length],width:1.5,dash:'dot'},opacity:0.7});});
+  plt('m4-chart1',traces,{title:'Stack Output Distribution with Component KDEs',xaxis:{title:'Stack Output (Y)'},yaxis:{title:'Density'},shapes,annotations:ann,bargap:0.06});
 }
-function m4RemoveComp() {
-  if (m4Components.length > 1) { m4Components.pop(); m4RenderEditor(); }
-}
-function m4DeleteComp(i) { m4Components.splice(i, 1); m4RenderEditor(); }
-
-// Re-read DOM values into m4Components
-function m4ReadDOM() {
-  const rows = document.querySelectorAll('#m4-comp-editor .editor-row');
-  rows.forEach((row, i) => {
-    if (!m4Components[i]) return;
-    const inputs = row.querySelectorAll('input');
-    const selects = row.querySelectorAll('select');
-    m4Components[i].name  = inputs[0].value;
-    m4Components[i].mean  = parseFloat(inputs[1].value) || 0;
-    m4Components[i].std   = parseFloat(inputs[2].value) || 0.01;
-    m4Components[i].dist  = selects[0].value;
-    m4Components[i].sign  = parseInt(selects[1].value);
-  });
-}
-
-function runMode4() {
-  clearAlerts();
-  m4ReadDOM();
-
-  const lslEn = document.getElementById('m4-lsl-en').checked;
-  const uslEn = document.getElementById('m4-usl-en').checked;
-  const lsl = lslEn ? parseFloat(document.getElementById('m4-lsl').value) : null;
-  const usl = uslEn ? parseFloat(document.getElementById('m4-usl').value) : null;
-  const nSim = parseInt(document.getElementById('m4-nsim').value);
-
-  if (lsl != null && usl != null && lsl >= usl) { showAlert('LSL must be < USL', 'error'); return; }
-  for (const c of m4Components) {
-    if (c.std <= 0) { showAlert(`${c.name}: σ must be > 0`, 'error'); return; }
-  }
-
-  initRNG();
-  const nComp = m4Components.length;
-  const signedSamples = m4Components.map(c => {
-    try { return sampleDist(c.dist, c.mean, c.std, nSim).map(v => c.sign * v); }
-    catch(e) { showAlert(`Error sampling ${c.name}: ${e.message}`, 'error'); return new Float64Array(nSim); }
-  });
-
-  const stack = new Float64Array(nSim);
-  for (let s = 0; s < nSim; s++) {
-    let sum = 0;
-    for (let j = 0; j < nComp; j++) sum += signedSamples[j][s];
-    stack[s] = sum;
-  }
-
-  const bs  = basicStats(stack);
-  const ym  = yieldMetrics(stack, lsl, usl);
-  const cap = processCap(stack, lsl, usl);
-
-  // Theoretical (linear, independence assumed)
-  const theorMean = m4Components.reduce((s, c) => s + c.sign * c.mean, 0);
-  const theorVar  = m4Components.reduce((s, c) => s + c.std ** 2, 0);
-  const theorStd  = Math.sqrt(theorVar);
-
-  // Sensitivity: variance contribution
-  const compVars = m4Components.map(c => c.std ** 2);
-  const totalVar = compVars.reduce((a, b) => a + b, 0);
-  const varContribs = compVars.map(v => totalVar > 0 ? v / totalVar * 100 : 100 / nComp);
-
-  // Empirical correlation of each signed component with stack
-  const stackMean = bs.Mean, stackStd = bs['Std Dev'];
-  const empCorr = signedSamples.map(col => {
-    const colArr = Array.from(col);
-    const cm = arr_mean(colArr), cs = arr_std(colArr);
-    if (cs === 0 || stackStd === 0) return 0;
-    let cov = 0;
-    for (let i = 0; i < nSim; i++) cov += (col[i] - cm) * (stack[i] - stackMean);
-    cov /= nSim;
-    return cov / (cs * stackStd);
-  });
-
-  lastResults.m4 = {
-    _label: `Stack | ${nComp} components`, _mode: 'm4',
-    stack, signedSamples, compNames: m4Components.map(c => c.name),
-    bs, ym, cap, lsl, usl,
-    theorMean, theorStd, varContribs, empCorr,
-    components: m4Components.map(c => ({...c})), nSim,
-  };
-
-  // KPIs
-  renderKPIs('m4-kpis', [
-    { label: 'Yield (%)',        value: fmt(ym['Yield (%)'], 4), type: ym['Yield (%)'] > 99 ? 'success' : 'warning' },
-    { label: 'DPMO',             value: fmt(ym.DPMO, 1),         type: '' },
-    { label: 'Cpk',              value: cap.Cpk != null ? fmt(cap.Cpk) : '—', type: '' },
-    { label: 'Stack Mean (sim)', value: fmt(bs.Mean, 4),          type: '' },
-    { label: 'Stack σ (sim)',    value: fmt(bs['Std Dev'], 4),    type: '' },
-    { label: 'Theoretical σ',   value: fmt(theorStd, 4),          type: '' },
+function runMode4(){
+  clearAlerts();m4ReadDOM();
+  const lslEn=document.getElementById('m4-lsl-en').checked,uslEn=document.getElementById('m4-usl-en').checked;
+  const lsl=lslEn?parseFloat(document.getElementById('m4-lsl').value):null;
+  const usl=uslEn?parseFloat(document.getElementById('m4-usl').value):null;
+  const nSim=parseInt(document.getElementById('m4-nsim').value);
+  const simName=document.getElementById('m4-name').value||'Stack';
+  if(lsl!=null&&usl!=null&&lsl>=usl){showAlert('LSL must be < USL','error');return;}
+  for(const c of m4Components)if(c.std<=0){showAlert(`${c.name}: σ must be > 0`,'error');return;}
+  initRNG('m4-seed');
+  const nComp=m4Components.length;
+  const signedSamples=m4Components.map(c=>{try{return sampleDist(c.dist,c.mean,c.std,nSim).map(v=>c.sign*v);}catch(e){showAlert(`Error sampling ${c.name}: ${e.message}`,'error');return new Float64Array(nSim);}});
+  const stack=new Float64Array(nSim);
+  for(let s=0;s<nSim;s++){let sum=0;for(let j=0;j<nComp;j++)sum+=signedSamples[j][s];stack[s]=sum;}
+  const bs=basicStats(stack),ym=yieldMetrics(stack,lsl,usl),cap=processCap(stack,lsl,usl);
+  const theorMean=m4Components.reduce((s,c)=>s+c.sign*c.mean,0),theorVar=m4Components.reduce((s,c)=>s+c.std**2,0),theorStd=Math.sqrt(theorVar);
+  const compVars=m4Components.map(c=>c.std**2),totalVar=compVars.reduce((a,b)=>a+b,0);
+  const varContribs=compVars.map(v=>totalVar>0?v/totalVar*100:100/nComp);
+  const stackMean=bs.Mean,stackStd=bs['Std Dev'];
+  const empCorr=signedSamples.map(col=>{const ca=Array.from(col),cm=arr_mean(ca),cs=arr_std(ca);if(cs===0||stackStd===0)return 0;let cov=0;for(let i=0;i<nSim;i++)cov+=(col[i]-cm)*(stack[i]-stackMean);cov/=nSim;return cov/(cs*stackStd);});
+  lastResults.m4={_label:`${simName} | ${nComp} comp.`,stack,signedSamples,bs,ym,cap,lsl,usl,theorMean,theorStd,varContribs,empCorr,components:m4Components.map(c=>({...c})),nSim};
+  document.getElementById('m4-summary-chips').innerHTML=[
+    chip('Name',simName),chip('Components',nComp),
+    lsl!=null?chip('LSL',lsl,'warn'):'',usl!=null?chip('USL',usl,'warn'):'',
+    chip('Simulations',nSim),chip('Theoretical σ',theorStd.toFixed(4)),
+  ].join('');
+  renderKPIs('m4-kpis',[
+    {label:'Yield (%)',value:fmt(ym['Yield (%)'],4),type:ym['Yield (%)']>99?'success':'warning'},
+    {label:'DPMO',value:fmt(ym.DPMO,1),type:''},
+    {label:'Cpk',value:cap.Cpk!=null?fmt(cap.Cpk):'—',type:''},
+    {label:'Stack Mean',value:fmt(bs.Mean,4),type:''},
+    {label:'Stack σ',value:fmt(bs['Std Dev'],4),type:''},
+    {label:'Theoretical σ',value:fmt(theorStd,4),type:''},
   ]);
-
-  // Main chart: stack histogram + normal fit
-  const dMin = arr_min(Array.from(stack)), dMax = arr_max(Array.from(stack));
-  const { shapes, annotations } = specShapes(lsl, usl, dMin, dMax);
-  const mu = bs.Mean, sigma = bs['Std Dev'];
-  shapes.push({ type: 'line', x0: mu, x1: mu, y0: 0, y1: 1, yref: 'paper',
-                line: { color: '#16A34A', width: 2, dash: 'dot' } });
-  annotations.push({ x: mu, y: 0.92, yref: 'paper', text: `μ=${mu.toFixed(3)}`,
-                      showarrow: false, font: { color: '#16A34A', size: 11 }, xanchor: 'left' });
-
-  const COMP_COLORS = ['#F97316','#16A34A','#7C3AED','#EC4899','#14B8A6','#F59E0B'];
-  const traces = [
-    { x: Array.from(stack), type: 'histogram', histnorm: 'probability density', nbinsx: 60,
-      name: 'Stack Output Y', marker: { color: '#2563EB', opacity: 0.7 } },
-    normalFitCurve(stack),
-  ];
-  // Component KDE overlays
-  signedSamples.forEach((col, j) => {
-    const cData = Array.from(col);
-    const cm = arr_mean(cData), cs = arr_std(cData);
-    const x = [], y = [];
-    for (let i = 0; i <= 300; i++) {
-      const xi = (cm - 4*cs) + 8*cs*i/300;
-      x.push(xi); y.push(normPDF(xi, cm, cs));
-    }
-    traces.push({ x, y, type: 'scatter', mode: 'lines', name: `${m4Components[j].name} (KDE)`,
-                  line: { color: COMP_COLORS[j % COMP_COLORS.length], width: 1.5, dash: 'dot' }, opacity: 0.7 });
-  });
-
-  plt('m4-chart1', traces, {
-    title: 'Stack Output Distribution with Component KDEs',
-    xaxis: { title: 'Stack Output (Y)' }, yaxis: { title: 'Density' }, shapes, annotations
-  });
-
-  // Sensitivity bar chart
-  const sortedIdx = varContribs.map((v, i) => i).sort((a, b) => varContribs[b] - varContribs[a]);
-  const sortNames  = sortedIdx.map(i => m4Components[i].name);
-  const sortValues = sortedIdx.map(i => varContribs[i]);
-  plotBars('m4-chart2', sortNames, sortValues, 'Variance Contribution by Component (%)',
-    sortValues.map(v => v > 30 ? '#EF4444' : v > 10 ? '#F97316' : '#2563EB'));
-
-  // Sensitivity table
-  const sensHeaders = ['Component', 'Sign', 'Dist', 'Mean', 'Std Dev', 'Var Contrib (%)', 'Corr w/ Stack'];
-  const sensRows = m4Components.map((c, i) => [
-    c.name, c.sign >= 0 ? '+1' : '−1', c.dist, c.mean, c.std,
-    varContribs[i].toFixed(2) + '%', empCorr[i].toFixed(4),
-  ]);
-  renderGenericTable('m4-sens-tbl', sensHeaders, sensRows);
-
-  // Stats tables
-  renderStatsTable('m4-stats-stack', { ...bs, 'Theoretical Mean': theorMean, 'Theoretical Std': theorStd });
-  renderStatsTable('m4-stats-cap', { ...ym, ...cap });
-
-  showResults('m4-results');
+  renderM4Chart();
+  const si=varContribs.map((_,i)=>i).sort((a,b)=>varContribs[b]-varContribs[a]);
+  plotBars('m4-chart2',si.map(i=>m4Components[i].name),si.map(i=>varContribs[i]),'Variance Contribution by Component (%)',si.map(i=>varContribs[i]>30?'#C0392B':varContribs[i]>10?'#D4540F':'#1578BE'));
+  renderDataTable('m4-sens-tbl',['Component','Sign','Dist','Mean','Std Dev','Var Contrib (%)','Corr w/ Stack'],m4Components.map((c,i)=>[c.name,c.sign>=0?'+1':'−1',c.dist,c.mean,c.std,varContribs[i].toFixed(2)+'%',empCorr[i].toFixed(4)]));
+  renderMetrics('m4-stats-stack',{...bs,'Theoretical Mean':theorMean,'Theoretical Std':theorStd});
+  // Capability section: only indices + defect counts (yield/DPMO already in KPI strip)
+  const m4CapDisplay={...cap};
+  if(ym['Out of Spec']!=null)m4CapDisplay['Out of Spec']=ym['Out of Spec'];
+  if(lsl!=null&&ym['Below LSL']!=null)m4CapDisplay['Below LSL']=ym['Below LSL'];
+  if(usl!=null&&ym['Above USL']!=null)m4CapDisplay['Above USL']=ym['Above USL'];
+  renderMetrics('m4-stats-cap',m4CapDisplay);
+  showResults('m4-welcome','m4-results');
 }
+function m4Export(type){const r=lastResults.m4;if(!r)return;if(type==='stack'){const rows=[['simulation','stack_output']];Array.from(r.stack).forEach((v,i)=>rows.push([i+1,v]));downloadCSV(rows,'mode4_stack.csv');}else{const rows=[['component','sign','dist','mean','std','var_contrib_pct','corr_with_stack']];r.components.forEach((c,i)=>rows.push([c.name,c.sign,c.dist,c.mean,c.std,r.varContribs[i].toFixed(4),r.empCorr[i].toFixed(4)]));downloadCSV(rows,'mode4_sensitivity.csv');}}
 
-function m4Export(type) {
-  const r = lastResults.m4; if (!r) return;
-  if (type === 'stack') {
-    const headers = ['stack_output', ...r.compNames];
-    const rows = [headers];
-    for (let i = 0; i < r.nSim; i++) {
-      rows.push([r.stack[i], ...r.signedSamples.map(s => s[i])]);
-    }
-    downloadCSV(rows, 'mode4_stack.csv');
-  } else {
-    const rows = [['component','sign','mean','std','var_contrib_pct','corr_with_stack']];
-    r.components.forEach((c, i) => rows.push([c.name, c.sign, c.mean, c.std,
-      r.varContribs[i].toFixed(4), r.empCorr[i].toFixed(4)]));
-    downloadCSV(rows, 'mode4_sensitivity.csv');
-  }
+// ═══════════════════════════════════════════════════
+// SCENARIO COMPARISON
+// ═══════════════════════════════════════════════════
+function refreshComparePanel(){
+  const empty=document.getElementById('cmp-empty'),content=document.getElementById('cmp-content'),list=document.getElementById('cmp-scenario-list');
+  if(savedScenarios.length===0){empty.classList.remove('hidden');content.classList.add('hidden');list.innerHTML='';return;}
+  empty.classList.add('hidden');content.classList.remove('hidden');
+  list.innerHTML=savedScenarios.map((sc,i)=>`<div class="sc-item"><input type="checkbox" id="cmp-chk-${i}" checked><span class="sc-label">${sc.label}</span><span class="sc-type tag">${sc.mode.toUpperCase()}</span></div>`).join('');
+  renderCompare();
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// COMPARE PANEL
-// ═══════════════════════════════════════════════════════════════════
-function refreshComparePanel() {
-  const emptyDiv   = document.getElementById('cmp-empty');
-  const contentDiv = document.getElementById('cmp-content');
-  if (savedScenarios.length === 0) {
-    emptyDiv.classList.remove('hidden');
-    contentDiv.classList.add('hidden');
-    return;
-  }
-  emptyDiv.classList.add('hidden');
-  contentDiv.classList.remove('hidden');
-
-  // Render checkboxes
-  const listDiv = document.getElementById('cmp-scenario-list');
-  listDiv.innerHTML = savedScenarios.map((sc, i) =>
-    `<div class="scenario-item">
-       <input type="checkbox" id="cmp-chk-${i}" checked>
-       <span class="s-label">${sc.label}</span>
-       <span class="s-type tag">${sc.mode.toUpperCase()}</span>
-     </div>`
-  ).join('');
+function renderCompare(){
+  const chartsArea=document.getElementById('cmp-chart-overlay').parentElement,tableArea=document.getElementById('cmp-tbl');
+  chartsArea.style.display='none';tableArea.innerHTML='';
+  const selected=savedScenarios.filter((_,i)=>document.getElementById(`cmp-chk-${i}`)?.checked);
+  if(selected.length<2){tableArea.innerHTML='<div class="alert alert-info">Select at least 2 scenarios to compare.</div>';return;}
+  chartsArea.style.display='';
+  const contSc=selected.filter(sc=>sc.result.obs||sc.result.stack);
+  const discSc=selected.filter(sc=>sc.result.totalDefective);
+  if(contSc.length>=2){plotOverlay('cmp-chart-overlay',contSc.map(sc=>sc.result.obs||sc.result.stack),contSc.map(sc=>sc.label),null,null,'Scenario Comparison — Density Overlay');}
+  else if(discSc.length>=2){plotOverlay('cmp-chart-overlay',discSc.map(sc=>new Float64Array(sc.result.totalDefective)),discSc.map(sc=>sc.label),null,null,'Affected Units — Scenario Overlay','Affected Units per Sim');}
+  else chartsArea.style.display='none';
+  const headers=['Scenario','Mode','Mean / Yield','Std Dev','Yield (%)','DPMO','Cpk'];
+  const rows=selected.map(sc=>{const r=sc.result;return[sc.label,sc.mode.toUpperCase(),r.bs?fmt(r.bs.Mean,4):(r.yieldVal!=null?fmt(r.yieldVal*100,4)+'%':r.yieldDep!=null?fmt(r.yieldDep*100,4)+'%':'—'),r.bs?fmt(r.bs['Std Dev'],4):'—',r.ym?fmt(r.ym['Yield (%)'],4):(r.yieldVal!=null?fmt(r.yieldVal*100,4):r.yieldDep!=null?fmt(r.yieldDep*100,4):'—'),r.ym?fmt(r.ym.DPMO,1):(r.dpmo!=null?fmt(r.dpmo,1):'—'),r.cap?.Cpk!=null?fmt(r.cap.Cpk):'—'];});
+  renderDataTable('cmp-tbl',headers,rows);
 }
+function cmpExport(){const sel=savedScenarios.filter((_,i)=>document.getElementById(`cmp-chk-${i}`)?.checked);const rows=[['scenario','mode','mean','std_dev','yield_pct','dpmo','cpk']];sel.forEach(sc=>{const r=sc.result;rows.push([sc.label,sc.mode,r.bs?.Mean??'',r.bs?.['Std Dev']??'',r.ym?.['Yield (%)']??(r.yieldVal!=null?r.yieldVal*100:r.yieldDep!=null?r.yieldDep*100:''),r.ym?.DPMO??r.dpmo??'',r.cap?.Cpk??'']);});downloadCSV(rows,'scenario_comparison.csv');}
 
-function renderCompare() {
-  const selected = savedScenarios.filter((_, i) =>
-    document.getElementById(`cmp-chk-${i}`)?.checked
-  );
-  if (selected.length < 2) { showAlert('Select at least 2 scenarios.', 'warning'); return; }
-
-  const chartsArea = document.getElementById('cmp-charts-area');
-  const tableArea  = document.getElementById('cmp-table-area');
-  chartsArea.innerHTML = '<div class="chart-container"><div id="cmp-chart-overlay" style="height:380px"></div></div>';
-  tableArea.innerHTML  = '<div class="sec-hdr" style="margin-top:14px">Summary Metrics Comparison</div><div id="cmp-tbl"></div>';
-
-  // Determine data type and overlay
-  const contSc = selected.filter(sc => sc.result.obs || sc.result.stack);
-  const discSc = selected.filter(sc => sc.result.totalDefective);
-
-  if (contSc.length >= 2) {
-    const datasets = contSc.map(sc => sc.result.obs || sc.result.stack);
-    const labels   = contSc.map(sc => sc.label);
-    const lsls = contSc.map(sc => sc.result.lsl).filter(v => v != null);
-    const usls = contSc.map(sc => sc.result.usl).filter(v => v != null);
-    plotOverlay('cmp-chart-overlay', datasets, labels,
-      lsls.length ? Math.min(...lsls) : null,
-      usls.length ? Math.max(...usls) : null,
-      'Scenario Comparison — Density Overlay');
-  } else if (discSc.length >= 2) {
-    const datasets = discSc.map(sc => new Float64Array(sc.result.totalDefective));
-    const labels   = discSc.map(sc => sc.label);
-    plotOverlay('cmp-chart-overlay', datasets, labels, null, null,
-      'Defective Items — Scenario Overlay', 'Defective Items per Simulation');
-  }
-
-  // Comparison metrics table
-  const headers = ['Scenario', 'Mode', 'Mean / Yield', 'Std Dev', 'Yield (%)', 'DPMO', 'Cpk'];
-  const rows = selected.map(sc => {
-    const r = sc.result;
-    return [
-      sc.label, sc.mode.toUpperCase(),
-      r.bs ? fmt(r.bs.Mean, 4) : (r.yieldVal != null ? fmt(r.yieldVal * 100, 4) + '%' : '—'),
-      r.bs ? fmt(r.bs['Std Dev'], 4) : '—',
-      r.ym ? fmt(r.ym['Yield (%)'], 4) : (r.yieldVal != null ? fmt(r.yieldVal * 100, 4) : r.yieldJoint != null ? fmt(r.yieldJoint * 100, 4) : '—'),
-      r.ym ? fmt(r.ym.DPMO, 1) : (r.dpmo != null ? fmt(r.dpmo, 1) : '—'),
-      r.cap?.Cpk != null ? fmt(r.cap.Cpk) : '—',
-    ];
-  });
-  renderGenericTable('cmp-tbl', headers, rows);
-
-  // Export button
-  tableArea.innerHTML += `<div class="btn-bar" style="margin-top:8px">
-    <button class="btn btn-secondary" onclick="cmpExport()">⬇️ Export Comparison CSV</button>
-  </div>`;
-}
-
-function cmpExport() {
-  const selected = savedScenarios.filter((_, i) => document.getElementById(`cmp-chk-${i}`)?.checked);
-  const rows = [['scenario','mode','mean','std_dev','yield_pct','dpmo','cpk']];
-  selected.forEach(sc => {
-    const r = sc.result;
-    rows.push([
-      sc.label, sc.mode,
-      r.bs?.Mean ?? '',
-      r.bs?.['Std Dev'] ?? '',
-      r.ym?.['Yield (%)'] ?? (r.yieldVal != null ? r.yieldVal * 100 : r.yieldJoint != null ? r.yieldJoint * 100 : ''),
-      r.ym?.DPMO ?? r.dpmo ?? '',
-      r.cap?.Cpk ?? '',
-    ]);
-  });
-  downloadCSV(rows, 'scenario_comparison.csv');
-}
-
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 m2RenderEditor();
-m3BuildUI();
+m3RebuildDeps();
+m3RenderEditor();
 m4RenderEditor();
 </script>
 </body>
