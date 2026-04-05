@@ -255,7 +255,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     <button class="mode-tab" onclick="switchTab('m4')" id="tab-m4">Tolerance Stack</button>
     <button class="mode-tab" onclick="switchTab('cmp')" id="tab-cmp">Compare</button>
   </nav>
-  <div class="header-right">v1.7 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
+  <div class="header-right">v1.8 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
 </header>
 
 <!-- ══════════════════ BODY ══════════════════ -->
@@ -450,9 +450,9 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
           <div id="m1-kpis"></div>
           <div class="cards-row">
             <div class="res-card"><div class="res-card-title">Observation Statistics</div><div id="m1-stats-obs"></div></div>
-            <div class="res-card"><div class="res-card-title">Process Capability (Cpk)</div><div id="m1-stats-cap"></div></div>
+            <div class="res-card"><div class="res-card-title" id="m1-cap-title">Process Capability (Cpk)</div><div id="m1-stats-cap"></div></div>
           </div>
-          <div class="alert alert-info" style="font-size:10.5px;">Cp/Cpk valid for approximately Normal data. For Lognormal or Weibull, rely on DPMO and Yield.</div>
+          <div class="alert alert-info" style="font-size:10.5px;">Cp/Cpk is a Normal-basis index. For Lognormal or Weibull distributions, the badge is marked <em>approx.</em> — rely on DPMO and Yield for primary risk assessment.</div>
         </div>
       </div>
     </div>
@@ -488,6 +488,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
         </div>
         <div class="stats-col">
           <div id="m2-kpis"></div>
+          <div class="alert alert-info" style="font-size:10.5px;margin-bottom:8px;">DPMU = Defective Units per Million Units (units experiencing ≥1 event). Classical DPMO requires a defined number of opportunities per unit.</div>
           <div class="res-card"><div class="res-card-title">Total Events Distribution</div><div id="m2-stats-def"></div></div>
           <div class="res-card"><div class="res-card-title">Affected Units Distribution</div><div id="m2-stats-dfu"></div></div>
           <div class="res-card"><div class="res-card-title">Per-Event Type Summary</div><div id="m2-per-event-tbl"></div></div>
@@ -536,6 +537,8 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
           </div>
         </div>
         <div class="stats-col">
+          <div id="m3-model-warn" class="alert alert-warning" style="font-size:10.5px;display:none;">⚠ <strong>Sequential Pairwise Approximation active.</strong> When multiple dependency pairs share an event, marginal probabilities are targets — not exact constraints. Results are directionally correct but may deviate under complex dependency structures.</div>
+          <div id="m3-clip-warn" class="alert alert-warning" style="font-size:10.5px;display:none;margin-top:4px;"></div>
           <div id="m3-kpis"></div>
           <div class="res-card"><div class="res-card-title">Total Events (Dependent)</div><div id="m3-stats-def"></div></div>
           <div class="res-card"><div class="res-card-title">Affected Units (Dependent)</div><div id="m3-stats-dfu"></div></div>
@@ -617,7 +620,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
 
 </main><!-- /main-content -->
 </div><!-- /app-body -->
-<footer>Monte Carlo Simulation Suite — v1.7 | Single-file HTML | All simulations run client-side</footer>
+<footer>Monte Carlo Simulation Suite — v1.8 | Single-file HTML | All simulations run client-side</footer>
 </div><!-- /app-shell -->
 
 <!-- ══════════════════════════════════════════════════
@@ -834,11 +837,15 @@ function runMode1(){
     lsl!=null?chip('LSL',lsl,'warn'):'',usl!=null?chip('USL',usl,'warn'):'',
     chip('Mode',simMode==='obs'?'Observations':'Runs'),chip('N obs',nObs),chip('Simulations',nSim),
   ].join('');
+  const isNormal=dist==='Normal';
+  const cpkLabel=isNormal?'Cpk':'Cpk (approx.)';
+  const cpkType=isNormal?(cap.Cpk!=null&&cap.Cpk>=1.33?'success':cap.Cpk!=null&&cap.Cpk>=1?'warning':'danger'):'warning';
+  document.getElementById('m1-cap-title').textContent=isNormal?'Process Capability (Cpk)':'Process Capability (Cpk) — Normal Basis';
   renderKPIs('m1-kpis',[
     {label:'Yield (%)',value:fmt(ym['Yield (%)'],4),type:ym['Yield (%)']>99?'success':ym['Yield (%)']>90?'warning':'danger'},
     {label:'DPMO',value:fmt(ym.DPMO,0),type:''},
     {label:'Defect Rate',value:fmt(ym['Defect Rate'],5),type:''},
-    {label:'Cpk',value:cap.Cpk!=null?fmt(cap.Cpk):'—',type:cap.Cpk!=null&&cap.Cpk>=1.33?'success':cap.Cpk!=null&&cap.Cpk>=1?'warning':'danger'},
+    {label:cpkLabel,value:cap.Cpk!=null?fmt(cap.Cpk):'—',type:cpkType},
     {label:'Mean',value:fmt(bs.Mean,4),type:''},
     {label:'Std Dev',value:fmt(bs['Std Dev'],4),type:''},
   ]);
@@ -885,8 +892,8 @@ function runMode2(){
   const perTypeCounts=Array.from({length:nTypes},()=>new Int32Array(nSim));
   for(let s=0;s<nSim;s++){let evCnt=0,affCnt=0;for(let u=0;u<nUnits;u++){let ue=0;for(let k=0;k<nTypes;k++)if(RNG.next()<probs[k]){ue++;perTypeCounts[k][s]++;}evCnt+=ue;if(ue>0)affCnt++;}totalEvents[s]=evCnt;totalAffected[s]=affCnt;}
   const pUnion=1-probs.reduce((acc,p)=>acc*(1-p),1);
-  const meanAff=arr_mean(Array.from(totalAffected)),affRate=meanAff/nUnits,dpmo=affRate*1e6;
-  lastResults.m2={_label:`${simName} | ${nTypes} types`,totalDefects:totalEvents,totalDefective:totalAffected,perTypeCounts,events:m2Events.map(d=>({...d})),pUnion,defectiveRate:affRate,dpmo,yieldVal:1-affRate,nUnits,nSim};
+  const meanAff=arr_mean(Array.from(totalAffected)),affRate=meanAff/nUnits,dpmu=affRate*1e6;
+  lastResults.m2={_label:`${simName} | ${nTypes} types`,totalDefects:totalEvents,totalDefective:totalAffected,perTypeCounts,events:m2Events.map(d=>({...d})),pUnion,defectiveRate:affRate,dpmu,yieldVal:1-affRate,nUnits,nSim};
   document.getElementById('m2-summary-chips').innerHTML=[
     chip('Name',simName),chip('Event types',nTypes),chip('Units/sim',nUnits),chip('Simulations',nSim),
     chip('P(any event)',pUnion.toFixed(4)),
@@ -894,7 +901,7 @@ function runMode2(){
   renderKPIs('m2-kpis',[
     {label:'Yield (%)',value:fmt((1-affRate)*100,4),type:(1-affRate)>0.99?'success':'warning'},
     {label:'Affected Rate',value:fmt(affRate,5),type:''},
-    {label:'DPMO',value:fmt(dpmo,1),type:''},
+    {label:'DPMU',value:fmt(dpmu,1),type:''},
     {label:'P(any event)',value:fmt(pUnion,4),type:''},
     {label:'E[Affected/Sim]',value:fmt(nUnits*pUnion,2),type:''},
     {label:'E[Events/Sim]',value:fmt(nUnits*arr_sum(probs),2),type:''},
@@ -917,6 +924,7 @@ function m2Export(type){const r=lastResults.m2;if(!r)return;if(type==='sim'){con
 // ═══════════════════════════════════════════════════
 let m3Events=[{name:'Event 1',prob:0.10},{name:'Event 2',prob:0.08},{name:'Event 3',prob:0.06}];
 let m3Deps=[];
+let _m3ClipCount=0,_m3EvalCount=0; // P1.4: clip diagnostic counters
 function m3RebuildDeps(){
   const n=m3Events.length,existing={};
   m3Deps.forEach(d=>{existing[`${d.i}_${d.j}`]=d;});
@@ -958,7 +966,7 @@ function m3SimulateUnit(){
     const pk=m3Events[k].prob;
     const activeDeps=m3Deps.filter(d=>d.active&&((d.j===k&&d.i<k)||(d.i===k&&d.j<k)));
     if(activeDeps.length===0){occurred[k]=RNG.next()<pk;}
-    else{let pAdj=pk;for(const dep of activeDeps){const iOther=dep.i===k?dep.j:dep.i;const pOther=m3Events[iOther].prob;const pij=dep.pij;const cov=pij-pk*pOther;if(occurred[iOther]){if(pOther>0)pAdj+=cov/pOther;}else{if(pOther<1)pAdj-=cov/(1-pOther);}}pAdj=Math.max(0,Math.min(1,pAdj));occurred[k]=RNG.next()<pAdj;}
+    else{let pAdj=pk;for(const dep of activeDeps){const iOther=dep.i===k?dep.j:dep.i;const pOther=m3Events[iOther].prob;const pij=dep.pij;const cov=pij-pk*pOther;if(occurred[iOther]){if(pOther>0)pAdj+=cov/pOther;}else{if(pOther<1)pAdj-=cov/(1-pOther);}}if(pAdj<0||pAdj>1)_m3ClipCount++;_m3EvalCount++;pAdj=Math.max(0,Math.min(1,pAdj));occurred[k]=RNG.next()<pAdj;}
   }
   return occurred;
 }
@@ -977,9 +985,18 @@ function runMode3(){
     if(pij<lo-1e-7){showAlert(`P(${ni}∩${nj})=${pij.toFixed(5)} below min feasible (${lo.toFixed(5)})`,'error');return;}
     if(pij>hi+1e-7){showAlert(`P(${ni}∩${nj})=${pij.toFixed(5)} exceeds min(P(${ni}),P(${nj}))=${hi.toFixed(5)}`,'error');return;}
   }
+  // P1.3: show/hide model approximation warning
+  const depEventCounts={};activeDeps.forEach(d=>{depEventCounts[d.i]=(depEventCounts[d.i]||0)+1;depEventCounts[d.j]=(depEventCounts[d.j]||0)+1;});
+  const hasMultiDeps=Object.values(depEventCounts).some(c=>c>1);
+  document.getElementById('m3-model-warn').style.display=(activeDeps.length>0&&hasMultiDeps)?'':'none';
+  // P1.4: reset clip counters
+  _m3ClipCount=0;_m3EvalCount=0;
   initRNG('m3-seed');
   const totalEvents=new Int32Array(nSim),totalAffected=new Int32Array(nSim);
   for(let s=0;s<nSim;s++){let evCnt=0,affCnt=0;for(let u=0;u<nUnits;u++){const occ=m3SimulateUnit();const ne=occ.filter(Boolean).length;evCnt+=ne;if(ne>0)affCnt++;}totalEvents[s]=evCnt;totalAffected[s]=affCnt;}
+  // P1.4: show clip warning if clipping was significant
+  const clipWarn=document.getElementById('m3-clip-warn');
+  if(_m3EvalCount>0&&_m3ClipCount/_m3EvalCount>0.001){clipWarn.style.display='';clipWarn.innerHTML=`⚠ Probability clipping triggered in <strong>${(_m3ClipCount/_m3EvalCount*100).toFixed(2)}%</strong> of evaluations — marginal probabilities are distorted. Review dependency inputs.`;}else{clipWarn.style.display='none';}
   const totalEventsInd=new Int32Array(nSim),totalAffectedInd=new Int32Array(nSim);
   for(let s=0;s<nSim;s++){let evCnt=0,affCnt=0;for(let u=0;u<nUnits;u++){let ne=0;for(const e of m3Events)if(RNG.next()<e.prob)ne++;evCnt+=ne;if(ne>0)affCnt++;}totalEventsInd[s]=evCnt;totalAffectedInd[s]=affCnt;}
   const meanAffDep=arr_mean(Array.from(totalAffected)),meanAffInd=arr_mean(Array.from(totalAffectedInd));
@@ -1129,11 +1146,11 @@ function renderCompare(){
   if(contSc.length>=2){plotOverlay('cmp-chart-overlay',contSc.map(sc=>sc.result.obs||sc.result.stack),contSc.map(sc=>sc.label),null,null,'Scenario Comparison — Density Overlay');}
   else if(discSc.length>=2){plotOverlay('cmp-chart-overlay',discSc.map(sc=>new Float64Array(sc.result.totalDefective)),discSc.map(sc=>sc.label),null,null,'Affected Units — Scenario Overlay','Affected Units per Sim');}
   else chartsArea.style.display='none';
-  const headers=['Scenario','Mode','Mean / Yield','Std Dev','Yield (%)','DPMO','Cpk'];
-  const rows=selected.map(sc=>{const r=sc.result;return[sc.label,sc.mode.toUpperCase(),r.bs?fmt(r.bs.Mean,4):(r.yieldVal!=null?fmt(r.yieldVal*100,4)+'%':r.yieldDep!=null?fmt(r.yieldDep*100,4)+'%':'—'),r.bs?fmt(r.bs['Std Dev'],4):'—',r.ym?fmt(r.ym['Yield (%)'],4):(r.yieldVal!=null?fmt(r.yieldVal*100,4):r.yieldDep!=null?fmt(r.yieldDep*100,4):'—'),r.ym?fmt(r.ym.DPMO,1):(r.dpmo!=null?fmt(r.dpmo,1):'—'),r.cap?.Cpk!=null?fmt(r.cap.Cpk):'—'];});
+  const headers=['Scenario','Mode','Mean / Yield','Std Dev','Yield (%)','DPMO / DPMU','Cpk'];
+  const rows=selected.map(sc=>{const r=sc.result;return[sc.label,sc.mode.toUpperCase(),r.bs?fmt(r.bs.Mean,4):(r.yieldVal!=null?fmt(r.yieldVal*100,4)+'%':r.yieldDep!=null?fmt(r.yieldDep*100,4)+'%':'—'),r.bs?fmt(r.bs['Std Dev'],4):'—',r.ym?fmt(r.ym['Yield (%)'],4):(r.yieldVal!=null?fmt(r.yieldVal*100,4):r.yieldDep!=null?fmt(r.yieldDep*100,4):'—'),r.ym?fmt(r.ym.DPMO,1):(r.dpmu!=null?fmt(r.dpmu,1):'—'),r.cap?.Cpk!=null?fmt(r.cap.Cpk):'—'];});
   renderDataTable('cmp-tbl',headers,rows);
 }
-function cmpExport(){const sel=savedScenarios.filter((_,i)=>document.getElementById(`cmp-chk-${i}`)?.checked);const rows=[['scenario','mode','mean','std_dev','yield_pct','dpmo','cpk']];sel.forEach(sc=>{const r=sc.result;rows.push([sc.label,sc.mode,r.bs?.Mean??'',r.bs?.['Std Dev']??'',r.ym?.['Yield (%)']??(r.yieldVal!=null?r.yieldVal*100:r.yieldDep!=null?r.yieldDep*100:''),r.ym?.DPMO??r.dpmo??'',r.cap?.Cpk??'']);});downloadCSV(rows,'scenario_comparison.csv');}
+function cmpExport(){const sel=savedScenarios.filter((_,i)=>document.getElementById(`cmp-chk-${i}`)?.checked);const rows=[['scenario','mode','mean','std_dev','yield_pct','dpmo_dpmu','cpk']];sel.forEach(sc=>{const r=sc.result;rows.push([sc.label,sc.mode,r.bs?.Mean??'',r.bs?.['Std Dev']??'',r.ym?.['Yield (%)']??(r.yieldVal!=null?r.yieldVal*100:r.yieldDep!=null?r.yieldDep*100:''),r.ym?.DPMO??r.dpmu??'',r.cap?.Cpk??'']);});downloadCSV(rows,'scenario_comparison.csv');}
 
 // ═══════════════════════════════════════════════════
 // INIT
