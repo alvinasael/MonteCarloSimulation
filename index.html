@@ -255,7 +255,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     <button class="mode-tab" onclick="switchTab('m4')" id="tab-m4">Tolerance Stack</button>
     <button class="mode-tab" onclick="switchTab('cmp')" id="tab-cmp">Compare</button>
   </nav>
-  <div class="header-right">v1.8 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
+  <div class="header-right">v1.9 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
 </header>
 
 <!-- ══════════════════ BODY ══════════════════ -->
@@ -448,6 +448,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
         <!-- Stats column -->
         <div class="stats-col">
           <div id="m1-kpis"></div>
+          <div id="m1-diagnostics"></div>
           <div class="cards-row">
             <div class="res-card"><div class="res-card-title">Observation Statistics</div><div id="m1-stats-obs"></div></div>
             <div class="res-card"><div class="res-card-title" id="m1-cap-title">Process Capability (Cpk)</div><div id="m1-stats-cap"></div></div>
@@ -488,6 +489,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
         </div>
         <div class="stats-col">
           <div id="m2-kpis"></div>
+          <div id="m2-diagnostics"></div>
           <div class="alert alert-info" style="font-size:10.5px;margin-bottom:8px;">DPMU = Defective Units per Million Units (units experiencing ≥1 event). Classical DPMO requires a defined number of opportunities per unit.</div>
           <div class="res-card"><div class="res-card-title">Total Events Distribution</div><div id="m2-stats-def"></div></div>
           <div class="res-card"><div class="res-card-title">Affected Units Distribution</div><div id="m2-stats-dfu"></div></div>
@@ -594,9 +596,10 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
         </div>
         <div class="stats-col">
           <div id="m4-kpis"></div>
+          <div id="m4-diagnostics"></div>
           <div class="cards-row">
             <div class="res-card"><div class="res-card-title">Stack Output Statistics</div><div id="m4-stats-stack"></div></div>
-            <div class="res-card"><div class="res-card-title">Process Capability (Cpk)</div><div id="m4-stats-cap"></div></div>
+            <div class="res-card"><div class="res-card-title" id="m4-cap-title">Process Capability (Cpk)</div><div id="m4-stats-cap"></div></div>
           </div>
         </div>
       </div>
@@ -620,7 +623,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
 
 </main><!-- /main-content -->
 </div><!-- /app-body -->
-<footer>Monte Carlo Simulation Suite — v1.8 | Single-file HTML | All simulations run client-side</footer>
+<footer>Monte Carlo Simulation Suite — v1.9 | Single-file HTML | All simulations run client-side</footer>
 </div><!-- /app-shell -->
 
 <!-- ══════════════════════════════════════════════════
@@ -676,9 +679,16 @@ function sampleDist(d,mu,sigma,n){switch(d){case'Normal':return sampleNormal(mu,
 // ═══════════════════════════════════════════════════
 // STATISTICS
 // ═══════════════════════════════════════════════════
-function basicStats(arr){const a=Array.from(arr),m=arr_mean(a),s=arr_std(a);return{N:a.length,Mean:m,'Std Dev':s,Min:arr_min(a),P5:arr_pct(a,5),P25:arr_pct(a,25),'P50 (Median)':arr_pct(a,50),P75:arr_pct(a,75),P95:arr_pct(a,95),Max:arr_max(a)};}
+function basicStats(arr){const a=Array.from(arr),n=a.length,m=arr_mean(a),s=arr_std(a);let sk=0;if(s>0){for(let i=0;i<n;i++)sk+=((a[i]-m)/s)**3;sk/=n;}return{N:n,Mean:m,'Std Dev':s,Skewness:+sk.toFixed(4),Min:arr_min(a),P5:arr_pct(a,5),P25:arr_pct(a,25),'P50 (Median)':arr_pct(a,50),P75:arr_pct(a,75),P95:arr_pct(a,95),Max:arr_max(a)};}
 function yieldMetrics(arr,lsl,usl){const a=Array.from(arr),n=a.length;const outLow=(lsl!=null)?a.filter(v=>v<lsl).length:0;const outHigh=(usl!=null)?a.filter(v=>v>usl).length:0;const outTot=outLow+outHigh,defRate=outTot/n;const res={'Yield (%)':+(((1-defRate)*100).toFixed(4)),'Defect Rate':+defRate.toFixed(6),'DPMO':+(defRate*1e6).toFixed(2),'Out of Spec':outTot};if(lsl!=null)res['Below LSL']=outLow;if(usl!=null)res['Above USL']=outHigh;return res;}
 function processCap(arr,lsl,usl){const a=Array.from(arr),mu=arr_mean(a),sigma=arr_std(a);if(sigma===0)return{Note:'σ=0 — capability undefined'};const res={};if(lsl!=null&&usl!=null){const cp=(usl-lsl)/(6*sigma),cpu=(usl-mu)/(3*sigma),cpl=(mu-lsl)/(3*sigma);Object.assign(res,{Cp:+cp.toFixed(4),Cpk:+Math.min(cpu,cpl).toFixed(4),Cpu:+cpu.toFixed(4),Cpl:+cpl.toFixed(4)});}else if(usl!=null){res.Cpu=+(((usl-mu)/(3*sigma)).toFixed(4));}else if(lsl!=null){res.Cpl=+(((mu-lsl)/(3*sigma)).toFixed(4));}return res;}
+// ── Convergence & Diagnostics ──────────────────────
+function convergenceCheck(items){
+  return items.filter(it=>it.theoretical!=null&&Math.abs(it.theoretical)>0&&Math.abs(it.simulated-it.theoretical)/Math.abs(it.theoretical)>(it.threshold||0.05))
+    .map(it=>{const d=(it.simulated-it.theoretical)/Math.abs(it.theoretical)*100;return`<strong>${it.label}:</strong> sim=${it.simulated.toFixed(4)}, expected=${it.theoretical.toFixed(4)} (Δ=${d>=0?'+':''}${d.toFixed(1)}%)`;});
+}
+function showDiagnostics(cid,warnings){const el=document.getElementById(cid);if(!el)return;el.innerHTML=warnings&&warnings.length?`<div class="alert alert-warning" style="font-size:10.5px;margin-bottom:8px;"><strong>Convergence advisory:</strong><br>${warnings.join('<br>')}</div>`:'';
+}
 
 // ═══════════════════════════════════════════════════
 // BIN STATE
@@ -711,16 +721,20 @@ function getBins(mode){return histBinsState[mode]==='auto'?0:histBinsCount[mode]
 // ═══════════════════════════════════════════════════
 const PLY_BASE={template:'plotly_white',font:{family:"'Segoe UI',system-ui,sans-serif",size:12},margin:{l:55,r:30,t:46,b:46},legend:{orientation:'h',yanchor:'bottom',y:1.02,xanchor:'right',x:1},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
 function plt(id,traces,layout,cfg={}){Plotly.newPlot(id,traces,Object.assign({},PLY_BASE,layout),Object.assign({responsive:true,displayModeBar:true,modeBarButtonsToRemove:['lasso2d','select2d']},cfg));}
-function normalFitCurve(arr,color,name){color=color||'#D4540F';name=name||'Normal fit';const mu=arr_mean(Array.from(arr)),sigma=arr_std(Array.from(arr));const x=[],y=[];for(let i=0;i<=400;i++){const xi=(mu-4*sigma)+8*sigma*i/400;x.push(xi);y.push(normPDF(xi,mu,sigma));}return{x,y,type:'scatter',mode:'lines',name,line:{color,width:2.5,dash:'dash'}};}
+function normalFitCurve(arr,color,name,opacity){color=color||'#D4540F';name=name||'Normal fit';opacity=opacity===undefined?1:opacity;const mu=arr_mean(Array.from(arr)),sigma=arr_std(Array.from(arr));const x=[],y=[];for(let i=0;i<=400;i++){const xi=(mu-4*sigma)+8*sigma*i/400;x.push(xi);y.push(normPDF(xi,mu,sigma));}return{x,y,type:'scatter',mode:'lines',name,line:{color,width:opacity<1?1.5:2.5,dash:'dash'},opacity};}
 function specShapes(lsl,usl,dMin,dMax){const shapes=[],ann=[],pad=(dMax-dMin)*0.05;if(lsl!=null){shapes.push({type:'line',x0:lsl,x1:lsl,y0:0,y1:1,yref:'paper',line:{color:'#C0392B',width:2,dash:'dash'}});shapes.push({type:'rect',x0:dMin-pad,x1:lsl,y0:0,y1:1,yref:'paper',fillcolor:'rgba(192,57,43,0.08)',line:{width:0}});ann.push({x:lsl,y:0.97,yref:'paper',text:`LSL=${lsl}`,showarrow:false,font:{color:'#C0392B',size:11},xanchor:'left'});}if(usl!=null){shapes.push({type:'line',x0:usl,x1:usl,y0:0,y1:1,yref:'paper',line:{color:'#C0392B',width:2,dash:'dash'}});shapes.push({type:'rect',x0:usl,x1:dMax+pad,y0:0,y1:1,yref:'paper',fillcolor:'rgba(192,57,43,0.08)',line:{width:0}});ann.push({x:usl,y:0.97,yref:'paper',text:`USL=${usl}`,showarrow:false,font:{color:'#C0392B',size:11},xanchor:'right'});}return{shapes,ann};}
-function plotDistribution(id,arr,lsl,usl,title,barColor,xLabel,nbinsx){
+function plotDistribution(id,arr,lsl,usl,title,barColor,xLabel,nbinsx,dist){
   barColor=barColor||'#5BA8D4';xLabel=xLabel||'Value';nbinsx=nbinsx||0;
   const data=Array.from(arr),mu=arr_mean(data),sigma=arr_std(data),dMin=arr_min(data),dMax=arr_max(data);
   const{shapes,ann}=specShapes(lsl,usl,dMin,dMax);
   shapes.push({type:'line',x0:mu,x1:mu,y0:0,y1:1,yref:'paper',line:{color:'#198754',width:2,dash:'dot'}});
   ann.push({x:mu,y:0.92,yref:'paper',text:`μ=${mu.toFixed(3)}`,showarrow:false,font:{color:'#198754',size:11},xanchor:'left'});
+  const isNorm=(!dist||dist==='Normal');
+  const fitColor=isNorm?'#D4540F':'#8A96A8';
+  const fitName=isNorm?'Normal fit':'Normal approx. (ref.)';
+  const fitOpacity=isNorm?1:0.55;
   plt(id,[{x:data,type:'histogram',histnorm:'probability density',nbinsx,name:'Simulated',
-    marker:{color:barColor,opacity:0.65,line:{color:'rgba(255,255,255,0.8)',width:0.8}}},normalFitCurve(arr)],
+    marker:{color:barColor,opacity:0.65,line:{color:'rgba(255,255,255,0.8)',width:0.8}}},normalFitCurve(arr,fitColor,fitName,fitOpacity)],
     {title,xaxis:{title:xLabel},yaxis:{title:'Density'},shapes,annotations:ann,bargap:0.06});
 }
 function plotDualHistogram(id,evts,aff,nUnits,title){
@@ -800,9 +814,10 @@ function m1ToggleMode(){const runs=document.querySelector('input[name="m1-mode"]
 function renderM1Charts(){
   const r=lastResults.m1;if(!r)return;
   const nb=getBins('m1');
-  plotDistribution('m1-chart1',r.obs,r.lsl,r.usl,'Distribution of Simulated Observations','#5BA8D4','Measured Value',nb);
+  plotDistribution('m1-chart1',r.obs,r.lsl,r.usl,'Distribution of Simulated Observations','#5BA8D4','Measured Value',nb,r.dist);
   const chart2Wrap=document.getElementById('m1-chart2-wrap');
-  if(r.simMode==='runs'&&r.runMeans&&r.runMeans.length>0){chart2Wrap.style.display='';plotDistribution('m1-chart2',r.runMeans,null,null,'Distribution of Subgroup Means (X̄)','#D4540F','Subgroup Mean (X̄)',nb);}
+  // Subgroup means approach Normal by CLT regardless of source distribution
+  if(r.simMode==='runs'&&r.runMeans&&r.runMeans.length>0){chart2Wrap.style.display='';plotDistribution('m1-chart2',r.runMeans,null,null,'Distribution of Subgroup Means (X̄)','#D4540F','Subgroup Mean (X̄)',nb,'Normal');}
   else{chart2Wrap.style.display='none';}
 }
 function runMode1(){
@@ -857,6 +872,11 @@ function runMode1(){
   if(lsl!=null&&ym['Below LSL']!=null)m1CapDisplay['Below LSL']=ym['Below LSL'];
   if(usl!=null&&ym['Above USL']!=null)m1CapDisplay['Above USL']=ym['Above USL'];
   renderMetrics('m1-stats-cap',m1CapDisplay);
+  const m1Conv=convergenceCheck([
+    {label:'Mean',simulated:bs.Mean,theoretical:mu,threshold:0.02},
+    {label:'Std Dev',simulated:bs['Std Dev'],theoretical:sig,threshold:0.02},
+  ]);
+  showDiagnostics('m1-diagnostics',m1Conv);
   showResults('m1-welcome','m1-results');
 }
 function m1Export(type){const r=lastResults.m1;if(!r)return;if(type==='obs'){downloadCSV([['observation']].concat(Array.from(r.obs).map(v=>[v])),'mode1_observations.csv');}else{downloadCSV(Object.entries({...r.bs,...r.ym,...r.cap}).map(([k,v])=>({Metric:k,Value:v})),'mode1_statistics.csv');}}
@@ -915,6 +935,11 @@ function runMode2(){
   renderMetrics('m2-stats-dfu',basicStats(new Float64Array(totalAffected)));
   const ptotal=arr_sum(probs);
   renderDataTable('m2-per-event-tbl',['Event Type','P(event)','E[Count/Sim]','Observed Mean/Sim','% Share'],m2Events.map((d,k)=>[d.name,d.prob.toFixed(4),(nUnits*d.prob).toFixed(2),arr_mean(Array.from(perTypeCounts[k])).toFixed(2),(ptotal>0?d.prob/ptotal*100:0).toFixed(2)+'%']));
+  const simAffRate=arr_mean(Array.from(totalAffected))/nUnits;
+  const m2Conv=convergenceCheck([
+    {label:'Affected Rate',simulated:simAffRate,theoretical:pUnion,threshold:0.05},
+  ]);
+  showDiagnostics('m2-diagnostics',m2Conv);
   showResults('m2-welcome','m2-results');
 }
 function m2Export(type){const r=lastResults.m2;if(!r)return;if(type==='sim'){const rows=[['simulation','total_events','total_affected']];for(let i=0;i<r.nSim;i++)rows.push([i+1,r.totalDefects[i],r.totalDefective[i]]);downloadCSV(rows,'mode2_simulation.csv');}else{const rows=[['event','probability','expected_per_sim','observed_mean_per_sim']];r.events.forEach((d,k)=>rows.push([d.name,d.prob,r.nUnits*d.prob,arr_mean(Array.from(r.perTypeCounts[k])).toFixed(4)]));downloadCSV(rows,'mode2_per_event.csv');}}
@@ -1072,7 +1097,7 @@ function renderM4Chart(){
   shapes.push({type:'line',x0:mu,x1:mu,y0:0,y1:1,yref:'paper',line:{color:'#198754',width:2,dash:'dot'}});
   ann.push({x:mu,y:0.92,yref:'paper',text:`μ=${mu.toFixed(3)}`,showarrow:false,font:{color:'#198754',size:11},xanchor:'left'});
   const CCOLS=['#D4540F','#198754','#7C3AED','#EC4899','#14B8A6','#F59E0B'];
-  const traces=[{x:Array.from(r.stack),type:'histogram',histnorm:'probability density',nbinsx:nb,name:'Stack Output Y',marker:{color:'#5BA8D4',opacity:0.65,line:{color:'rgba(255,255,255,0.8)',width:0.8}}},normalFitCurve(r.stack)];
+  const traces=[{x:Array.from(r.stack),type:'histogram',histnorm:'probability density',nbinsx:nb,name:'Stack Output Y',marker:{color:'#5BA8D4',opacity:0.65,line:{color:'rgba(255,255,255,0.8)',width:0.8}}},normalFitCurve(r.stack,'#D4540F','Normal fit (CLT approx.)')];
   r.signedSamples.forEach((col,j)=>{const ca=Array.from(col),cm=arr_mean(ca),cs=arr_std(ca),x=[],y=[];for(let i=0;i<=300;i++){const xi=(cm-4*cs)+8*cs*i/300;x.push(xi);y.push(normPDF(xi,cm,cs));}traces.push({x,y,type:'scatter',mode:'lines',name:`${r.components[j].name} (KDE)`,line:{color:CCOLS[j%CCOLS.length],width:1.5,dash:'dot'},opacity:0.7});});
   plt('m4-chart1',traces,{title:'Stack Output Distribution with Component KDEs',xaxis:{title:'Stack Output (Y)'},yaxis:{title:'Density'},shapes,annotations:ann,bargap:0.06});
 }
@@ -1114,13 +1139,24 @@ function runMode4(){
   const si=varContribs.map((_,i)=>i).sort((a,b)=>varContribs[b]-varContribs[a]);
   plotBars('m4-chart2',si.map(i=>m4Components[i].name),si.map(i=>varContribs[i]),'Variance Contribution by Component (%)',si.map(i=>varContribs[i]>30?'#C0392B':varContribs[i]>10?'#D4540F':'#1578BE'));
   renderDataTable('m4-sens-tbl',['Component','Sign','Dist','Mean','Std Dev','Var Contrib (%)','Corr w/ Stack'],m4Components.map((c,i)=>[c.name,c.sign>=0?'+1':'−1',c.dist,c.mean,c.std,varContribs[i].toFixed(2)+'%',empCorr[i].toFixed(4)]));
-  renderMetrics('m4-stats-stack',{...bs,'Theoretical Mean':theorMean,'Theoretical Std':theorStd});
+  renderMetrics('m4-stats-stack',{...bs,'Theoretical Mean':theorMean,'Theoretical Std (indep.)':theorStd});
   // Capability section: only indices + defect counts (yield/DPMO already in KPI strip)
   const m4CapDisplay={...cap};
   if(ym['Out of Spec']!=null)m4CapDisplay['Out of Spec']=ym['Out of Spec'];
   if(lsl!=null&&ym['Below LSL']!=null)m4CapDisplay['Below LSL']=ym['Below LSL'];
   if(usl!=null&&ym['Above USL']!=null)m4CapDisplay['Above USL']=ym['Above USL'];
   renderMetrics('m4-stats-cap',m4CapDisplay);
+  // P2.6: Normality advisory for stack output
+  const allNormal=m4Components.every(c=>c.dist==='Normal');
+  const skAdvisory=Math.abs(bs.Skewness)>0.5?`Stack output skewness = ${bs.Skewness.toFixed(3)} — distribution may not be Normal; CLT fit is approximate.`:'';
+  document.getElementById('m4-cap-title').textContent=allNormal?'Process Capability (Cpk)':'Process Capability (Cpk) — CLT Approx.';
+  // P2.4: Convergence check for stack mean and std vs theoretical (independence assumed)
+  const m4Conv=convergenceCheck([
+    {label:'Stack Mean',simulated:bs.Mean,theoretical:theorMean,threshold:0.02},
+    {label:'Stack Std Dev',simulated:bs['Std Dev'],theoretical:theorStd,threshold:0.03},
+  ]);
+  if(skAdvisory)m4Conv.push(`<strong>Normality advisory:</strong> ${skAdvisory}`);
+  showDiagnostics('m4-diagnostics',m4Conv);
   showResults('m4-welcome','m4-results');
 }
 function m4Export(type){const r=lastResults.m4;if(!r)return;if(type==='stack'){const rows=[['simulation','stack_output']];Array.from(r.stack).forEach((v,i)=>rows.push([i+1,v]));downloadCSV(rows,'mode4_stack.csv');}else{const rows=[['component','sign','dist','mean','std','var_contrib_pct','corr_with_stack']];r.components.forEach((c,i)=>rows.push([c.name,c.sign,c.dist,c.mean,c.std,r.varContribs[i].toFixed(4),r.empCorr[i].toFixed(4)]));downloadCSV(rows,'mode4_sensitivity.csv');}}
