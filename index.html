@@ -255,7 +255,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     <button class="mode-tab" onclick="switchTab('m4')" id="tab-m4">Tolerance Stack</button>
     <button class="mode-tab" onclick="switchTab('cmp')" id="tab-cmp">Compare</button>
   </nav>
-  <div class="header-right">v1.9 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
+  <div class="header-right">v1.10 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
 </header>
 
 <!-- ══════════════════ BODY ══════════════════ -->
@@ -491,8 +491,10 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
           <div id="m2-kpis"></div>
           <div id="m2-diagnostics"></div>
           <div class="alert alert-info" style="font-size:10.5px;margin-bottom:8px;">DPMU = Defective Units per Million Units (units experiencing ≥1 event). Classical DPMO requires a defined number of opportunities per unit.</div>
-          <div class="res-card"><div class="res-card-title">Total Events Distribution</div><div id="m2-stats-def"></div></div>
-          <div class="res-card"><div class="res-card-title">Affected Units Distribution</div><div id="m2-stats-dfu"></div></div>
+          <div class="cards-row">
+            <div class="res-card"><div class="res-card-title">Total Events Distribution</div><div id="m2-stats-def"></div></div>
+            <div class="res-card"><div class="res-card-title">Affected Units Distribution</div><div id="m2-stats-dfu"></div></div>
+          </div>
           <div class="res-card"><div class="res-card-title">Per-Event Type Summary</div><div id="m2-per-event-tbl"></div></div>
         </div>
       </div>
@@ -542,8 +544,10 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
           <div id="m3-model-warn" class="alert alert-warning" style="font-size:10.5px;display:none;">⚠ <strong>Sequential Pairwise Approximation active.</strong> When multiple dependency pairs share an event, marginal probabilities are targets — not exact constraints. Results are directionally correct but may deviate under complex dependency structures.</div>
           <div id="m3-clip-warn" class="alert alert-warning" style="font-size:10.5px;display:none;margin-top:4px;"></div>
           <div id="m3-kpis"></div>
-          <div class="res-card"><div class="res-card-title">Total Events (Dependent)</div><div id="m3-stats-def"></div></div>
-          <div class="res-card"><div class="res-card-title">Affected Units (Dependent)</div><div id="m3-stats-dfu"></div></div>
+          <div class="cards-row">
+            <div class="res-card"><div class="res-card-title">Total Events (Dependent)</div><div id="m3-stats-def"></div></div>
+            <div class="res-card"><div class="res-card-title">Affected Units (Dependent)</div><div id="m3-stats-dfu"></div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -623,7 +627,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
 
 </main><!-- /main-content -->
 </div><!-- /app-body -->
-<footer>Monte Carlo Simulation Suite — v1.9 | Single-file HTML | All simulations run client-side</footer>
+<footer>Monte Carlo Simulation Suite — v1.10 | Single-file HTML | All simulations run client-side</footer>
 </div><!-- /app-shell -->
 
 <!-- ══════════════════════════════════════════════════
@@ -719,7 +723,7 @@ function getBins(mode){return histBinsState[mode]==='auto'?0:histBinsCount[mode]
 // ═══════════════════════════════════════════════════
 // PLOTLY HELPERS
 // ═══════════════════════════════════════════════════
-const PLY_BASE={template:'plotly_white',font:{family:"'Segoe UI',system-ui,sans-serif",size:12},margin:{l:55,r:30,t:46,b:46},legend:{orientation:'h',yanchor:'bottom',y:1.02,xanchor:'right',x:1},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
+const PLY_BASE={template:'plotly_white',font:{family:"'Segoe UI',system-ui,sans-serif",size:12},margin:{l:55,r:30,t:62,b:46},legend:{orientation:'h',yanchor:'bottom',y:1.02,xanchor:'right',x:1},paper_bgcolor:'#fff',plot_bgcolor:'#fff'};
 function plt(id,traces,layout,cfg={}){Plotly.newPlot(id,traces,Object.assign({},PLY_BASE,layout),Object.assign({responsive:true,displayModeBar:true,modeBarButtonsToRemove:['lasso2d','select2d']},cfg));}
 function normalFitCurve(arr,color,name,opacity){color=color||'#D4540F';name=name||'Normal fit';opacity=opacity===undefined?1:opacity;const mu=arr_mean(Array.from(arr)),sigma=arr_std(Array.from(arr));const x=[],y=[];for(let i=0;i<=400;i++){const xi=(mu-4*sigma)+8*sigma*i/400;x.push(xi);y.push(normPDF(xi,mu,sigma));}return{x,y,type:'scatter',mode:'lines',name,line:{color,width:opacity<1?1.5:2.5,dash:'dash'},opacity};}
 function specShapes(lsl,usl,dMin,dMax){const shapes=[],ann=[],pad=(dMax-dMin)*0.05;if(lsl!=null){shapes.push({type:'line',x0:lsl,x1:lsl,y0:0,y1:1,yref:'paper',line:{color:'#C0392B',width:2,dash:'dash'}});shapes.push({type:'rect',x0:dMin-pad,x1:lsl,y0:0,y1:1,yref:'paper',fillcolor:'rgba(192,57,43,0.08)',line:{width:0}});ann.push({x:lsl,y:0.97,yref:'paper',text:`LSL=${lsl}`,showarrow:false,font:{color:'#C0392B',size:11},xanchor:'left'});}if(usl!=null){shapes.push({type:'line',x0:usl,x1:usl,y0:0,y1:1,yref:'paper',line:{color:'#C0392B',width:2,dash:'dash'}});shapes.push({type:'rect',x0:usl,x1:dMax+pad,y0:0,y1:1,yref:'paper',fillcolor:'rgba(192,57,43,0.08)',line:{width:0}});ann.push({x:usl,y:0.97,yref:'paper',text:`USL=${usl}`,showarrow:false,font:{color:'#C0392B',size:11},xanchor:'right'});}return{shapes,ann};}
