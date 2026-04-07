@@ -256,7 +256,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     <button class="mode-tab" onclick="switchTab('m5')" id="tab-m5">Lot Rejection</button>
     <button class="mode-tab" onclick="switchTab('cmp')" id="tab-cmp">Compare</button>
   </nav>
-  <div class="header-right">v1.11 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
+  <div class="header-right">v1.12 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
 </header>
 
 <!-- ══════════════════ BODY ══════════════════ -->
@@ -437,6 +437,13 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
       <div class="form-group"><label>MC Iterations</label><input type="number" id="m5-niter" value="10000" min="100"></div>
       <div class="form-group"><label>Sensitivity Δ (%)</label><input type="number" id="m5-delta" value="10" min="1" max="50"><div class="hint">Rate shift for sensitivity analysis</div></div>
       <div class="form-group"><label>RNG Seed (0=random)</label><input type="number" id="m5-seed" value="42" min="0"></div>
+    </div>
+    <div class="inp-section">
+      <div class="inp-label">Sample Size Sweep</div>
+      <div class="form-group"><label>Min Sample (m)</label><input type="number" id="m5-sweep-min" value="10" min="1"></div>
+      <div class="form-group"><label>Max Sample (m)</label><input type="number" id="m5-sweep-max" value="500" min="2"></div>
+      <div class="form-group"><label>Steps</label><input type="number" id="m5-sweep-steps" value="20" min="3" max="50"></div>
+      <div class="form-group"><label>Sweep Iterations</label><input type="number" id="m5-sweep-iter" value="2000" min="200"><div class="hint">Iterations per step (lower = faster)</div></div>
     </div>
     <div class="inp-spacer"></div>
     <div class="inp-footer"><button class="btn-run" onclick="runMode5()">▶ Run Simulation</button></div>
@@ -684,14 +691,30 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
       <div class="results-split">
         <div class="chart-col">
           <div class="chart-wrap"><div id="m5-chart1" style="height:280px"></div></div>
-          <div class="chart-wrap"><div id="m5-chart2" style="height:270px"></div></div>
+          <div class="chart-wrap"><div id="m5-chart2" style="height:260px"></div></div>
           <div class="res-card">
-            <div class="res-card-title">Export</div>
-            <div class="btn-bar">
-              <button class="btn btn-secondary" onclick="m5Export()">⬇ Full Analysis CSV</button>
+            <div class="extra-tabs">
+              <button class="extra-tab active" onclick="switchExtra('m5','sweep',event)">Sample Size Sweep</button>
+              <button class="extra-tab" onclick="switchExtra('m5','pareto',event)">Pareto</button>
+              <button class="extra-tab" onclick="switchExtra('m5','exp',event)">Export</button>
             </div>
-            <div class="sep"></div>
-            <button class="btn btn-success" onclick="saveScenario('m5')">Save Scenario for Comparison</button>
+            <div class="extra-pane active" id="m5-extra-sweep">
+              <div id="m5-chart3" style="height:255px"></div>
+              <div class="alert alert-info" style="font-size:10.5px;margin-top:6px;">Rejection and acceptance probability across inspection sample sizes. Use to balance inspection cost vs lot quality risk.</div>
+            </div>
+            <div class="extra-pane" id="m5-extra-pareto">
+              <div id="m5-chart4" style="height:240px"></div>
+              <div class="res-card-title" style="margin-top:8px;">Rejection Combination Breakdown</div>
+              <div id="m5-comb-tbl"></div>
+            </div>
+            <div class="extra-pane" id="m5-extra-exp">
+              <div class="btn-bar">
+                <button class="btn btn-secondary" onclick="m5Export()">⬇ Full Analysis CSV</button>
+                <button class="btn btn-secondary" onclick="m5ExportSweep()">⬇ Sample Size Sweep CSV</button>
+              </div>
+              <div class="sep"></div>
+              <button class="btn btn-success" onclick="saveScenario('m5')">Save Scenario for Comparison</button>
+            </div>
           </div>
         </div>
         <div class="stats-col">
@@ -700,9 +723,9 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
             <div class="res-card"><div class="res-card-title">Rejection Summary</div><div id="m5-stats-overall"></div></div>
             <div class="res-card"><div class="res-card-title">Per-Defect Detail</div><div id="m5-stats-per-defect"></div></div>
           </div>
+          <div class="res-card"><div class="res-card-title">Combination Breakdown</div><div id="m5-stats-comb"></div></div>
           <div class="alert alert-info" style="font-size:10.5px;">
-            <strong>Model:</strong> p<sub>i</sub> ~ Beta(x<sub>i</sub>+1, n<sub>i</sub>−x<sub>i</sub>+1) encodes uncertainty from observed count x<sub>i</sub> of n<sub>i</sub> inspected.
-            d<sub>i</sub> ~ Binomial(m, p<sub>i</sub>) simulates lot inspection. 95% CI via normal approximation.
+            <strong>Model:</strong> p<sub>i</sub> ~ Beta(x<sub>i</sub>+1, n<sub>i</sub>−x<sub>i</sub>+1) · d<sub>i</sub> ~ Binomial(m, p<sub>i</sub>). Marginal = defect contributed to rejection. Exclusive = sole cause.
           </div>
         </div>
       </div>
@@ -711,7 +734,7 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
 
 </main><!-- /main-content -->
 </div><!-- /app-body -->
-<footer>Monte Carlo Simulation Suite — v1.11 | Single-file HTML | All simulations run client-side</footer>
+<footer>Monte Carlo Simulation Suite — v1.12 | Single-file HTML | All simulations run client-side</footer>
 </div><!-- /app-shell -->
 
 <!-- ══════════════════════════════════════════════════
@@ -1308,32 +1331,79 @@ function m5ToggleMode(){
 }
 
 // ── Core MC engine ────────────────────────────────
-// scaleFactors[i]: optional rate multiplier for defect i (sensitivity runs)
-function m5RunMC(defects,lotSize,rejMode,cCombined,nIter,scaleFactors){
+// scaleFactors[i]: optional rate multiplier (sensitivity runs)
+// trackCombos: if true, accumulate per-combination bitmask counts (default true)
+function m5RunMC(defects,lotSize,rejMode,cCombined,nIter,scaleFactors,trackCombos){
   scaleFactors=scaleFactors||defects.map(()=>1);
+  if(trackCombos===undefined)trackCombos=true;
   let nRej=0;
   const perDefRej=defects.map(()=>0);
+  const combCounts={};  // bitmask (bit i=1 if defect i triggered) → count of rejection lots
   for(let iter=0;iter<nIter;iter++){
-    // Sample p_i ~ Beta(x_i+1, n_i-x_i+1), optionally scaled
+    // Step 1: sample p_i ~ Beta(x_i+1, n_i-x_i+1), apply optional scale factor
     const ps=defects.map((d,i)=>Math.max(0,Math.min(1,
       sampleBetaScalar(d.x+1,Math.max(1,d.n-d.x)+1)*scaleFactors[i]
     )));
     if(rejMode==='A'){
-      // Defect-specific: lot rejected if any d_i >= c_i
-      let lotFail=false;
+      // Defect-specific: reject if any d_i ~ Bin(m,p_i) >= c_i; track per-defect bitmask
+      let mask=0;
       for(let i=0;i<defects.length;i++){
-        if(sampleBinomialScalar(lotSize,ps[i])>=defects[i].c){perDefRej[i]++;lotFail=true;}
+        if(sampleBinomialScalar(lotSize,ps[i])>=defects[i].c){perDefRej[i]++;mask|=(1<<i);}
       }
-      if(lotFail)nRej++;
+      if(mask){nRej++;if(trackCombos)combCounts[mask]=(combCounts[mask]||0)+1;}
     } else {
       // Combined: p_union = 1-Π(1-p_i), D ~ Bin(m, p_union), reject if D >= cCombined
       const pUnion=Math.max(0,Math.min(1,1-ps.reduce((acc,p)=>acc*(1-p),1)));
-      if(sampleBinomialScalar(lotSize,pUnion)>=cCombined)nRej++;
-      // Per-defect marginal rejection (informational in mode B)
-      for(let i=0;i<defects.length;i++)if(sampleBinomialScalar(lotSize,ps[i])>=defects[i].c)perDefRej[i]++;
+      const lotFail=sampleBinomialScalar(lotSize,pUnion)>=cCombined;
+      // Marginal per-defect tracking (informational in mode B)
+      let mask=0;
+      for(let i=0;i<defects.length;i++)if(sampleBinomialScalar(lotSize,ps[i])>=defects[i].c){perDefRej[i]++;mask|=(1<<i);}
+      if(lotFail){nRej++;if(trackCombos&&mask)combCounts[mask]=(combCounts[mask]||0)+1;}
     }
   }
-  return{nRej,nIter,perDefRej};
+  return{nRej,nIter,perDefRej,combCounts};
+}
+
+// ── Sample size sweep ─────────────────────────────
+// Runs m5RunMC across a range of sample sizes; returns [{m, pRej, pAcc}]
+function m5RunSweep(defects,rejMode,cCombined,minM,maxM,nSteps,nIter){
+  nSteps=Math.max(2,Math.min(50,nSteps));
+  const results=[];
+  const step=(maxM-minM)/(nSteps-1);
+  for(let i=0;i<nSteps;i++){
+    const m=Math.max(1,Math.round(minM+i*step));
+    const r=m5RunMC(defects,m,rejMode,cCombined,nIter,null,false);
+    const pRej=r.nRej/nIter;
+    results.push({m,pRej,pAcc:1-pRej});
+  }
+  return results;
+}
+
+// ── Pareto decomposition ──────────────────────────
+// Returns per-defect marginal + exclusive contribution, sorted by marginal desc
+function m5ComputePareto(defects,nRej,perDefRej,combCounts){
+  return defects.map((d,i)=>{
+    const excCount=combCounts[1<<i]||0;   // lots where ONLY defect i caused rejection
+    return{
+      name:d.name,
+      marginalCount:perDefRej[i],
+      marginalPct:nRej>0?perDefRej[i]/nRej*100:0,
+      exclusiveCount:excCount,
+      exclusivePct:nRej>0?excCount/nRej*100:0,
+    };
+  }).sort((a,b)=>b.marginalCount-a.marginalCount);
+}
+
+// ── Combination formatter ─────────────────────────
+// Returns [{label, count, pct}] sorted by count desc
+function m5FormatCombos(defects,nRej,combCounts){
+  return Object.entries(combCounts)
+    .map(([mask,count])=>{
+      const m=parseInt(mask);
+      const names=defects.filter((_,i)=>m&(1<<i)).map(d=>d.name);
+      return{label:names.join(' ∩ '),count,pct:nRej>0?count/nRej*100:0};
+    })
+    .sort((a,b)=>b.count-a.count);
 }
 
 // ── Sensitivity pass ─────────────────────────────
@@ -1366,20 +1436,31 @@ function runMode5(){
   }
   if(lotSize<1){showAlert('Lot size m must be ≥ 1','error');return;}
   if(nIter<100){showAlert('Iterations must be ≥ 100','error');return;}
+  const sweepMin=Math.max(1,parseInt(document.getElementById('m5-sweep-min').value)||10);
+  const sweepMax=Math.max(sweepMin+1,parseInt(document.getElementById('m5-sweep-max').value)||500);
+  const sweepSteps=parseInt(document.getElementById('m5-sweep-steps').value)||20;
+  const sweepIter=Math.max(200,parseInt(document.getElementById('m5-sweep-iter').value)||2000);
   initRNG('m5-seed');
-  // Baseline
-  const base=m5RunMC(m5Defects,lotSize,rejMode,cCombined,nIter,null);
+  // Baseline (with combo tracking)
+  const base=m5RunMC(m5Defects,lotSize,rejMode,cCombined,nIter,null,true);
   const pRej=base.nRej/nIter;
   const ci_hw=1.96*Math.sqrt(pRej*(1-pRej)/nIter);
   const ci95=[Math.max(0,pRej-ci_hw),Math.min(1,pRej+ci_hw)];
   const rejByDefect=m5Defects.map((d,i)=>({name:d.name,prob:base.perDefRej[i]/nIter}));
-  // Sensitivity
+  // Sensitivity (lightweight — no combo tracking)
   const sensitivity=m5Sensitivity(m5Defects,lotSize,rejMode,cCombined,nIter,delta,pRej);
+  // Sample size sweep
+  const sweepData=m5RunSweep(m5Defects,rejMode,cCombined,sweepMin,sweepMax,sweepSteps,sweepIter);
+  // Pareto & combination breakdown
+  const pareto=m5ComputePareto(m5Defects,base.nRej,base.perDefRej,base.combCounts);
+  const combos=m5FormatCombos(m5Defects,base.nRej,base.combCounts);
   // Store
   lastResults.m5={
     _label:`${simName} | ${m5Defects.length} defect type${m5Defects.length>1?'s':''}`,
     yieldVal:1-pRej,       // lot acceptance prob — surfaces in Compare panel
     overallRejProb:pRej,ci95,rejByDefect,sensitivity,
+    sweepData,pareto,combos,
+    totalLots:nIter,totalRejected:base.nRej,totalAccepted:nIter-base.nRej,
     defects:m5Defects.map(d=>({...d})),lotSize,rejMode,cCombined,nIter,delta,simName
   };
   // Summary chips
@@ -1410,21 +1491,35 @@ function runMode5(){
   });
   // Chart 2 — sensitivity dot-range plot
   renderM5SensChart();
+  // Chart 3 — sample size sweep
+  renderM5SweepChart();
+  // Chart 4 — Pareto
+  renderM5ParetoChart();
   // Stats cards
   renderMetrics('m5-stats-overall',{
-    'P(Lot Rejected)':+pRej.toFixed(6),
-    'P(Lot Accepted)':+(1-pRej).toFixed(6),
-    '95% CI Lower'   :+ci95[0].toFixed(6),
-    '95% CI Upper'   :+ci95[1].toFixed(6),
-    'Lot Size (m)'   :lotSize,
-    'Rejection Mode' :rejMode==='A'?'Defect-Specific':'Combined',
-    'Iterations'     :nIter,
+    'Lots Simulated'  :nIter,
+    'Lots Rejected'   :base.nRej,
+    'Lots Accepted'   :nIter-base.nRej,
+    'P(Lot Rejected)' :+pRej.toFixed(6),
+    'P(Lot Accepted)' :+(1-pRej).toFixed(6),
+    '95% CI Lower'    :+ci95[0].toFixed(6),
+    '95% CI Upper'    :+ci95[1].toFixed(6),
+    'Rejection Mode'  :rejMode==='A'?'Defect-Specific':'Combined',
   });
   const postMeans=m5Defects.map(d=>(d.x+1)/(d.n+2));
   renderDataTable('m5-stats-per-defect',
-    ['Defect','x','n','p̄ (posterior)','c','P(defect → reject)'],
-    m5Defects.map((d,i)=>[d.name,d.x,d.n,postMeans[i].toFixed(5),d.c,rejByDefect[i].prob.toFixed(5)])
+    ['Defect','x','n','p̄','c','P(→ reject)','Marginal %','Excl. %'],
+    m5Defects.map((d,i)=>{
+      const pt=pareto.find(p=>p.name===d.name)||{marginalPct:0,exclusivePct:0};
+      return[d.name,d.x,d.n,postMeans[i].toFixed(4),d.c,
+        rejByDefect[i].prob.toFixed(5),pt.marginalPct.toFixed(1)+'%',pt.exclusivePct.toFixed(1)+'%'];
+    })
   );
+  // Combination breakdown (stats col + pareto pane)
+  const comboRows=combos.length?combos.map(c=>[c.label,c.count,c.pct.toFixed(2)+'%'])
+    :[['No rejections recorded','—','—']];
+  renderDataTable('m5-stats-comb',['Combination','Lots','% of Rej.'],comboRows.slice(0,10));
+  renderDataTable('m5-comb-tbl', ['Combination','Lots','% of Rej.'],comboRows);
   showResults('m5-welcome','m5-results');
 }
 
@@ -1455,25 +1550,71 @@ function renderM5SensChart(){
   });
 }
 
+function renderM5SweepChart(){
+  const r=lastResults.m5;if(!r||!r.sweepData||!r.sweepData.length)return;
+  const ms=r.sweepData.map(d=>d.m);
+  plt('m5-chart3',[
+    {x:ms,y:r.sweepData.map(d=>d.pRej),type:'scatter',mode:'lines+markers',name:'P(Reject)',
+     line:{color:'#C0392B',width:2.5},marker:{size:5,color:'#C0392B'}},
+    {x:ms,y:r.sweepData.map(d=>d.pAcc),type:'scatter',mode:'lines+markers',name:'P(Accept)',
+     line:{color:'#198754',width:2.5},marker:{size:5,color:'#198754'}},
+  ],{
+    title:'Rejection vs Inspection Sample Size',
+    xaxis:{title:'Sample Size (m)'},
+    yaxis:{title:'Probability',range:[0,1]},
+  });
+}
+
+function renderM5ParetoChart(){
+  const r=lastResults.m5;if(!r||!r.pareto||!r.pareto.length)return;
+  const names=r.pareto.map(d=>d.name);
+  plt('m5-chart4',[
+    {x:r.pareto.map(d=>d.marginalPct),y:names,type:'bar',orientation:'h',
+     name:'Marginal (contributed to reject)',marker:{color:'#1578BE'},
+     text:r.pareto.map(d=>d.marginalPct.toFixed(1)+'%'),textposition:'outside'},
+    {x:r.pareto.map(d=>d.exclusivePct),y:names,type:'bar',orientation:'h',
+     name:'Exclusive (sole cause)',marker:{color:'#D4540F'},
+     text:r.pareto.map(d=>d.exclusivePct.toFixed(1)+'%'),textposition:'outside'},
+  ],{
+    title:'Defect Contribution to Rejection (Pareto)',
+    barmode:'group',
+    xaxis:{title:'% of All Rejections'},yaxis:{title:''},
+    height:Math.max(240,r.pareto.length*60+140),
+  });
+}
+
 function m5Export(){
   const r=lastResults.m5;if(!r)return;
   const rows=[
     ['metric','value'],
-    ['P(Lot Rejected)',r.overallRejProb],
-    ['P(Lot Accepted)',1-r.overallRejProb],
-    ['CI_95_lower',r.ci95[0]],
-    ['CI_95_upper',r.ci95[1]],
-    ['lot_size',r.lotSize],
-    ['rejection_mode',r.rejMode],
-    ['iterations',r.nIter],
+    ['lots_simulated',r.totalLots],['lots_rejected',r.totalRejected],['lots_accepted',r.totalAccepted],
+    ['P(Lot Rejected)',r.overallRejProb],['P(Lot Accepted)',1-r.overallRejProb],
+    ['CI_95_lower',r.ci95[0]],['CI_95_upper',r.ci95[1]],
+    ['lot_size',r.lotSize],['rejection_mode',r.rejMode],['iterations',r.nIter],
     [''],
-    ['defect','x_observed','n_sample','posterior_mean','threshold_c','p_defect_rejects'],
-    ...r.defects.map((d,i)=>[d.name,d.x,d.n,((d.x+1)/(d.n+2)).toFixed(6),d.c,r.rejByDefect[i].prob.toFixed(6)]),
+    ['defect','x_observed','n_sample','posterior_mean','threshold_c','p_defect_rejects','marginal_pct','exclusive_pct'],
+    ...r.defects.map((d,i)=>{
+      const pt=r.pareto.find(p=>p.name===d.name)||{marginalPct:0,exclusivePct:0};
+      return[d.name,d.x,d.n,((d.x+1)/(d.n+2)).toFixed(6),d.c,r.rejByDefect[i].prob.toFixed(6),pt.marginalPct.toFixed(2),pt.exclusivePct.toFixed(2)];
+    }),
     [''],
     ['defect','p_reject_baseline','p_reject_plus_delta','p_reject_minus_delta','sensitivity_delta_pct'],
     ...r.sensitivity.map(s=>[s.name,s.baseline.toFixed(6),s.plus.toFixed(6),s.minus.toFixed(6),s.delta]),
+    [''],
+    ['combination','lots_rejected','pct_of_rejections'],
+    ...(r.combos||[]).map(c=>[c.label,c.count,c.pct.toFixed(4)]),
   ];
   downloadCSV(rows,'lot_rejection_analysis.csv');
+}
+
+function m5ExportSweep(){
+  const r=lastResults.m5;if(!r||!r.sweepData)return;
+  downloadCSV(
+    [['sample_size_m','p_rejection','p_acceptance']].concat(
+      r.sweepData.map(d=>[d.m,d.pRej.toFixed(6),d.pAcc.toFixed(6)])
+    ),
+    'lot_rejection_sweep.csv'
+  );
 }
 
 // ═══════════════════════════════════════════════════
