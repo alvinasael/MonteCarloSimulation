@@ -253,9 +253,10 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     <button class="mode-tab" onclick="switchTab('m2')" id="tab-m2">Ind. Events</button>
     <button class="mode-tab" onclick="switchTab('m3')" id="tab-m3">Dep. Events</button>
     <button class="mode-tab" onclick="switchTab('m4')" id="tab-m4">Tolerance Stack</button>
+    <button class="mode-tab" onclick="switchTab('m5')" id="tab-m5">Lot Rejection</button>
     <button class="mode-tab" onclick="switchTab('cmp')" id="tab-cmp">Compare</button>
   </nav>
-  <div class="header-right">v1.10 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
+  <div class="header-right">v1.11 &nbsp;·&nbsp; <strong id="badge-count">0</strong> saved</div>
 </header>
 
 <!-- ══════════════════ BODY ══════════════════ -->
@@ -398,6 +399,48 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     </div>
     <div class="inp-spacer"></div>
   </div><!-- /inputs-cmp -->
+
+  <!-- M5 Inputs -->
+  <div class="input-panel" id="inputs-m5">
+    <div class="inp-section">
+      <div class="inp-label">Simulation Setup</div>
+      <div class="form-group"><label>Simulation Name</label><input type="text" id="m5-name" value="Lot Rejection 1"></div>
+      <div class="count-row">
+        <label>Defect types:</label>
+        <input type="number" id="m5-n-defects" value="2" min="1" max="10" onchange="m5SetCount(parseInt(this.value)||1)">
+        <button class="btn btn-primary btn-sm" onclick="m5AddDefect()">+</button>
+        <button class="btn btn-secondary btn-sm" onclick="m5RemoveDefect()">−</button>
+      </div>
+      <table class="editor-tbl" style="font-size:11px;">
+        <thead><tr><th>Name</th><th>x</th><th>n</th><th>c</th><th></th></tr></thead>
+        <tbody id="m5-defect-body"></tbody>
+      </table>
+      <p style="font-size:10px;color:var(--g400);margin-top:2px;">x = observed · n = sample size · c = reject threshold</p>
+    </div>
+    <div class="inp-section">
+      <div class="inp-label">Inspection</div>
+      <div class="form-group"><label>Lot Size (m)</label><input type="number" id="m5-lot" value="500" min="1"></div>
+      <div class="form-group"><label>Rejection Mode</label>
+        <div class="radio-group">
+          <label><input type="radio" name="m5-mode" value="A" checked onchange="m5ToggleMode()"> Defect-Specific</label>
+          <label><input type="radio" name="m5-mode" value="B" onchange="m5ToggleMode()"> Combined</label>
+        </div>
+      </div>
+      <div class="form-group" id="m5-combined-group" style="opacity:.4;pointer-events:none;">
+        <label>Combined Threshold (c)</label>
+        <input type="number" id="m5-c-combined" value="3" min="1">
+        <div class="hint">Reject if total defects in lot ≥ c</div>
+      </div>
+    </div>
+    <div class="inp-section">
+      <div class="inp-label">Parameters</div>
+      <div class="form-group"><label>MC Iterations</label><input type="number" id="m5-niter" value="10000" min="100"></div>
+      <div class="form-group"><label>Sensitivity Δ (%)</label><input type="number" id="m5-delta" value="10" min="1" max="50"><div class="hint">Rate shift for sensitivity analysis</div></div>
+      <div class="form-group"><label>RNG Seed (0=random)</label><input type="number" id="m5-seed" value="42" min="0"></div>
+    </div>
+    <div class="inp-spacer"></div>
+    <div class="inp-footer"><button class="btn-run" onclick="runMode5()">▶ Run Simulation</button></div>
+  </div><!-- /inputs-m5 -->
 
 </aside><!-- /input-sidebar -->
 
@@ -625,9 +668,50 @@ footer{text-align:center;padding:10px;color:var(--g400);font-size:10.5px;
     </div>
   </div><!-- /panel-cmp -->
 
+  <!-- ── M5 Panel ── -->
+  <div class="panel" id="panel-m5">
+    <div id="m5-welcome" class="welcome-fill">
+      <div class="welcome-card">
+        <h3>Lot Rejection Probability</h3>
+        <p>Define defect types with observed counts and rejection thresholds on the left, then click <strong>Run Simulation</strong>.</p>
+      </div>
+    </div>
+    <div id="m5-results" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <div class="summary-bar">
+        <span class="summary-bar-title">Input Summary</span>
+        <div class="summary-chips" id="m5-summary-chips"></div>
+      </div>
+      <div class="results-split">
+        <div class="chart-col">
+          <div class="chart-wrap"><div id="m5-chart1" style="height:280px"></div></div>
+          <div class="chart-wrap"><div id="m5-chart2" style="height:270px"></div></div>
+          <div class="res-card">
+            <div class="res-card-title">Export</div>
+            <div class="btn-bar">
+              <button class="btn btn-secondary" onclick="m5Export()">⬇ Full Analysis CSV</button>
+            </div>
+            <div class="sep"></div>
+            <button class="btn btn-success" onclick="saveScenario('m5')">Save Scenario for Comparison</button>
+          </div>
+        </div>
+        <div class="stats-col">
+          <div id="m5-kpis"></div>
+          <div class="cards-row">
+            <div class="res-card"><div class="res-card-title">Rejection Summary</div><div id="m5-stats-overall"></div></div>
+            <div class="res-card"><div class="res-card-title">Per-Defect Detail</div><div id="m5-stats-per-defect"></div></div>
+          </div>
+          <div class="alert alert-info" style="font-size:10.5px;">
+            <strong>Model:</strong> p<sub>i</sub> ~ Beta(x<sub>i</sub>+1, n<sub>i</sub>−x<sub>i</sub>+1) encodes uncertainty from observed count x<sub>i</sub> of n<sub>i</sub> inspected.
+            d<sub>i</sub> ~ Binomial(m, p<sub>i</sub>) simulates lot inspection. 95% CI via normal approximation.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /panel-m5 -->
+
 </main><!-- /main-content -->
 </div><!-- /app-body -->
-<footer>Monte Carlo Simulation Suite — v1.10 | Single-file HTML | All simulations run client-side</footer>
+<footer>Monte Carlo Simulation Suite — v1.11 | Single-file HTML | All simulations run client-side</footer>
 </div><!-- /app-shell -->
 
 <!-- ══════════════════════════════════════════════════
@@ -679,6 +763,25 @@ function sampleUniform(mu,sigma,n){const half=sigma*Math.sqrt(3),lo=mu-half,hi=m
 function sampleTriangular(mu,sigma,n){const half=sigma*Math.sqrt(6),lo=mu-half,hi=mu+half,mode=mu,fc=(mode-lo)/(hi-lo);const a=new Float64Array(n);for(let i=0;i<n;i++){const u=RNG.next();a[i]=u<fc?lo+Math.sqrt(u*(hi-lo)*(mode-lo)):hi-Math.sqrt((1-u)*(hi-lo)*(hi-mode));}return a;}
 function sampleWeibull(mu,sigma,n){const cv=sigma/mu;const kShape=bisect(k=>{const g1=gammaFn(1+1/k),g2=gammaFn(1+2/k);return Math.sqrt(Math.max(g2/(g1*g1)-1,0))-cv;},0.05,200);const lam=mu/gammaFn(1+1/kShape);const a=new Float64Array(n);for(let i=0;i<n;i++)a[i]=lam*Math.pow(-Math.log(RNG.next()||1e-12),1/kShape);return a;}
 function sampleDist(d,mu,sigma,n){switch(d){case'Normal':return sampleNormal(mu,sigma,n);case'Lognormal':return sampleLognormal(mu,sigma,n);case'Uniform':return sampleUniform(mu,sigma,n);case'Triangular':return sampleTriangular(mu,sigma,n);case'Weibull':return sampleWeibull(mu,sigma,n);default:return sampleNormal(mu,sigma,n);}}
+
+// ── Beta / Binomial samplers (used by Mode 5) ──────
+// Single standard normal draw via Box-Muller (uses shared RNG)
+function stdNorm(){const u1=RNG.next()||1e-12,u2=RNG.next();return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);}
+// Gamma(alpha,1) — Marsaglia-Tsang squeeze method
+function sampleGammaScalar(a){
+  if(a<1)return sampleGammaScalar(a+1)*Math.pow(RNG.next()||1e-12,1/a);
+  const d=a-1/3,c=1/Math.sqrt(9*d);
+  for(;;){let x=stdNorm(),v=1+c*x;if(v<=0)continue;v=v*v*v;const u=RNG.next();if(u<1-0.0331*x*x*x*x)return d*v;if(Math.log(u)<0.5*x*x+d*(1-v+Math.log(v)))return d*v;}
+}
+// Beta(a,b) via ratio of two independent Gammas; clamped to [0,1]
+function sampleBetaScalar(a,b){const g1=sampleGammaScalar(a),g2=sampleGammaScalar(b);return Math.max(0,Math.min(1,g1/(g1+g2)));}
+// Binomial(m,p) scalar — Poisson approx for small mu, Normal approx for large mu
+function sampleBinomialScalar(m,p){
+  if(p<=0)return 0;if(p>=1)return m;
+  const mu=m*p;
+  if(mu<15){const L=Math.exp(-mu);let k=0,pr=1;do{pr*=(RNG.next()||1e-12);k++;}while(pr>L);return Math.min(k-1,m);}
+  return Math.max(0,Math.min(m,Math.round(mu+Math.sqrt(m*p*(1-p))*stdNorm())));
+}
 
 // ═══════════════════════════════════════════════════
 // STATISTICS
@@ -806,7 +909,7 @@ function fmt(v,d=4){if(typeof v!=='number')return String(v);if(Number.isInteger(
 // ═══════════════════════════════════════════════════
 // SCENARIO STORAGE
 // ═══════════════════════════════════════════════════
-let savedScenarios=[],lastResults={m1:null,m2:null,m3:null,m4:null};
+let savedScenarios=[],lastResults={m1:null,m2:null,m3:null,m4:null,m5:null};
 function saveScenario(mode){const r=lastResults[mode];if(!r){showAlert('Run a simulation first.','warning');return;}const n=savedScenarios.length+1;const label=`[${n}] ${r._label||mode}`;savedScenarios.push({label,mode,result:r});updateBadge();showAlert(`Saved: <strong>${label}</strong>`,'success');}
 function updateBadge(){document.getElementById('badge-count').textContent=savedScenarios.length;}
 function clearScenarios(){savedScenarios=[];updateBadge();refreshComparePanel();}
@@ -1166,6 +1269,214 @@ function runMode4(){
 function m4Export(type){const r=lastResults.m4;if(!r)return;if(type==='stack'){const rows=[['simulation','stack_output']];Array.from(r.stack).forEach((v,i)=>rows.push([i+1,v]));downloadCSV(rows,'mode4_stack.csv');}else{const rows=[['component','sign','dist','mean','std','var_contrib_pct','corr_with_stack']];r.components.forEach((c,i)=>rows.push([c.name,c.sign,c.dist,c.mean,c.std,r.varContribs[i].toFixed(4),r.empCorr[i].toFixed(4)]));downloadCSV(rows,'mode4_sensitivity.csv');}}
 
 // ═══════════════════════════════════════════════════
+// MODE 5 — LOT REJECTION PROBABILITY
+// ═══════════════════════════════════════════════════
+let m5Defects=[
+  {name:'Defect A',x:3,n:200,c:2},
+  {name:'Defect B',x:1,n:200,c:2},
+];
+
+// ── Editor ────────────────────────────────────────
+function m5RenderEditor(){
+  document.getElementById('m5-defect-body').innerHTML=m5Defects.map((d,i)=>`<tr>
+    <td><input type="text" value="${d.name}" onchange="m5Defects[${i}].name=this.value"></td>
+    <td><input type="number" value="${d.x}" min="0" style="width:46px" onchange="m5Defects[${i}].x=parseInt(this.value)||0"></td>
+    <td><input type="number" value="${d.n}" min="1" style="width:52px" onchange="m5Defects[${i}].n=parseInt(this.value)||1"></td>
+    <td><input type="number" value="${d.c}" min="1" style="width:44px" onchange="m5Defects[${i}].c=parseInt(this.value)||1"></td>
+    <td><button class="del-btn" onclick="m5DeleteDefect(${i})">✕</button></td>
+  </tr>`).join('');
+  document.getElementById('m5-n-defects').value=m5Defects.length;
+}
+function m5SetCount(n){n=Math.max(1,Math.min(10,n));while(m5Defects.length<n)m5Defects.push({name:`Defect ${String.fromCharCode(65+m5Defects.length)}`,x:1,n:100,c:2});while(m5Defects.length>n)m5Defects.pop();document.getElementById('m5-n-defects').value=n;m5RenderEditor();}
+function m5AddDefect(){m5Defects.push({name:`Defect ${String.fromCharCode(65+m5Defects.length)}`,x:1,n:100,c:2});m5RenderEditor();}
+function m5RemoveDefect(){if(m5Defects.length>1){m5Defects.pop();m5RenderEditor();}}
+function m5DeleteDefect(i){m5Defects.splice(i,1);m5RenderEditor();}
+function m5ReadDOM(){
+  document.querySelectorAll('#m5-defect-body tr').forEach((row,i)=>{
+    if(!m5Defects[i])return;
+    const inp=row.querySelectorAll('input');
+    m5Defects[i].name=inp[0].value;
+    m5Defects[i].x=Math.max(0,parseInt(inp[1].value)||0);
+    m5Defects[i].n=Math.max(1,parseInt(inp[2].value)||1);
+    m5Defects[i].c=Math.max(1,parseInt(inp[3].value)||1);
+  });
+}
+function m5ToggleMode(){
+  const isB=document.querySelector('input[name="m5-mode"]:checked').value==='B';
+  const grp=document.getElementById('m5-combined-group');
+  grp.style.opacity=isB?'1':'0.4';grp.style.pointerEvents=isB?'auto':'none';
+}
+
+// ── Core MC engine ────────────────────────────────
+// scaleFactors[i]: optional rate multiplier for defect i (sensitivity runs)
+function m5RunMC(defects,lotSize,rejMode,cCombined,nIter,scaleFactors){
+  scaleFactors=scaleFactors||defects.map(()=>1);
+  let nRej=0;
+  const perDefRej=defects.map(()=>0);
+  for(let iter=0;iter<nIter;iter++){
+    // Sample p_i ~ Beta(x_i+1, n_i-x_i+1), optionally scaled
+    const ps=defects.map((d,i)=>Math.max(0,Math.min(1,
+      sampleBetaScalar(d.x+1,Math.max(1,d.n-d.x)+1)*scaleFactors[i]
+    )));
+    if(rejMode==='A'){
+      // Defect-specific: lot rejected if any d_i >= c_i
+      let lotFail=false;
+      for(let i=0;i<defects.length;i++){
+        if(sampleBinomialScalar(lotSize,ps[i])>=defects[i].c){perDefRej[i]++;lotFail=true;}
+      }
+      if(lotFail)nRej++;
+    } else {
+      // Combined: p_union = 1-Π(1-p_i), D ~ Bin(m, p_union), reject if D >= cCombined
+      const pUnion=Math.max(0,Math.min(1,1-ps.reduce((acc,p)=>acc*(1-p),1)));
+      if(sampleBinomialScalar(lotSize,pUnion)>=cCombined)nRej++;
+      // Per-defect marginal rejection (informational in mode B)
+      for(let i=0;i<defects.length;i++)if(sampleBinomialScalar(lotSize,ps[i])>=defects[i].c)perDefRej[i]++;
+    }
+  }
+  return{nRej,nIter,perDefRej};
+}
+
+// ── Sensitivity pass ─────────────────────────────
+// For each defect, runs ±delta% scaled MC (capped at 3000 iters for speed)
+function m5Sensitivity(defects,lotSize,rejMode,cCombined,nIter,delta,baselineProb){
+  const sensIter=Math.min(nIter,3000);
+  return defects.map((_,i)=>{
+    const sf_plus=defects.map((_,j)=>j===i?1+delta/100:1);
+    const sf_minus=defects.map((_,j)=>j===i?Math.max(0,1-delta/100):1);
+    const rp=m5RunMC(defects,lotSize,rejMode,cCombined,sensIter,sf_plus);
+    const rm=m5RunMC(defects,lotSize,rejMode,cCombined,sensIter,sf_minus);
+    return{name:defects[i].name,baseline:baselineProb,plus:rp.nRej/sensIter,minus:rm.nRej/sensIter,delta};
+  });
+}
+
+// ── Run ──────────────────────────────────────────
+function runMode5(){
+  clearAlerts();m5ReadDOM();
+  const lotSize=parseInt(document.getElementById('m5-lot').value);
+  const nIter=parseInt(document.getElementById('m5-niter').value);
+  const delta=parseFloat(document.getElementById('m5-delta').value)||10;
+  const rejMode=document.querySelector('input[name="m5-mode"]:checked').value;
+  const cCombined=parseInt(document.getElementById('m5-c-combined').value)||1;
+  const simName=document.getElementById('m5-name').value||'Lot Rejection';
+  // Validate
+  for(const d of m5Defects){
+    if(d.x<0||d.x>d.n){showAlert(`${d.name}: x must be in [0, n]`,'error');return;}
+    if(d.n<1){showAlert(`${d.name}: sample size n must be ≥ 1`,'error');return;}
+    if(d.c<1){showAlert(`${d.name}: threshold c must be ≥ 1`,'error');return;}
+  }
+  if(lotSize<1){showAlert('Lot size m must be ≥ 1','error');return;}
+  if(nIter<100){showAlert('Iterations must be ≥ 100','error');return;}
+  initRNG('m5-seed');
+  // Baseline
+  const base=m5RunMC(m5Defects,lotSize,rejMode,cCombined,nIter,null);
+  const pRej=base.nRej/nIter;
+  const ci_hw=1.96*Math.sqrt(pRej*(1-pRej)/nIter);
+  const ci95=[Math.max(0,pRej-ci_hw),Math.min(1,pRej+ci_hw)];
+  const rejByDefect=m5Defects.map((d,i)=>({name:d.name,prob:base.perDefRej[i]/nIter}));
+  // Sensitivity
+  const sensitivity=m5Sensitivity(m5Defects,lotSize,rejMode,cCombined,nIter,delta,pRej);
+  // Store
+  lastResults.m5={
+    _label:`${simName} | ${m5Defects.length} defect type${m5Defects.length>1?'s':''}`,
+    yieldVal:1-pRej,       // lot acceptance prob — surfaces in Compare panel
+    overallRejProb:pRej,ci95,rejByDefect,sensitivity,
+    defects:m5Defects.map(d=>({...d})),lotSize,rejMode,cCombined,nIter,delta,simName
+  };
+  // Summary chips
+  document.getElementById('m5-summary-chips').innerHTML=[
+    chip('Name',simName),chip('Defect types',m5Defects.length),chip('Lot size (m)',lotSize),
+    chip('Mode',rejMode==='A'?'Defect-Specific':'Combined'),chip('Iterations',nIter),chip('Sensitivity ±',delta+'%'),
+  ].join('');
+  // KPIs
+  renderKPIs('m5-kpis',[
+    {label:'P(Lot Rejected)',value:fmt(pRej,4),type:pRej>0.1?'danger':pRej>0.01?'warning':'success'},
+    {label:'95% CI Lower',value:fmt(ci95[0],4),type:''},
+    {label:'95% CI Upper',value:fmt(ci95[1],4),type:''},
+    {label:'P(Lot Accepted)',value:fmt(1-pRej,4),type:(1-pRej)>0.99?'success':(1-pRej)>0.90?'warning':'danger'},
+    {label:'Lot Size (m)',value:lotSize,type:''},
+    {label:'Iterations',value:nIter,type:''},
+  ]);
+  // Chart 1 — per-defect rejection probability
+  const dNames=rejByDefect.map(d=>d.name);
+  const dProbs=rejByDefect.map(d=>d.prob);
+  plt('m5-chart1',[{
+    x:dProbs,y:dNames,type:'bar',orientation:'h',
+    marker:{color:dProbs.map(p=>p>0.1?'#C0392B':p>0.01?'#D97706':'#1578BE')},
+    text:dProbs.map(p=>(p*100).toFixed(2)+'%'),textposition:'outside',
+  }],{
+    title:'P(Rejection) by Defect Type',
+    xaxis:{title:'Rejection Probability',range:[0,Math.min(1,Math.max(...dProbs,0.05)*1.3)]},
+    yaxis:{title:''},height:Math.max(260,m5Defects.length*56+120),
+  });
+  // Chart 2 — sensitivity dot-range plot
+  renderM5SensChart();
+  // Stats cards
+  renderMetrics('m5-stats-overall',{
+    'P(Lot Rejected)':+pRej.toFixed(6),
+    'P(Lot Accepted)':+(1-pRej).toFixed(6),
+    '95% CI Lower'   :+ci95[0].toFixed(6),
+    '95% CI Upper'   :+ci95[1].toFixed(6),
+    'Lot Size (m)'   :lotSize,
+    'Rejection Mode' :rejMode==='A'?'Defect-Specific':'Combined',
+    'Iterations'     :nIter,
+  });
+  const postMeans=m5Defects.map(d=>(d.x+1)/(d.n+2));
+  renderDataTable('m5-stats-per-defect',
+    ['Defect','x','n','p̄ (posterior)','c','P(defect → reject)'],
+    m5Defects.map((d,i)=>[d.name,d.x,d.n,postMeans[i].toFixed(5),d.c,rejByDefect[i].prob.toFixed(5)])
+  );
+  showResults('m5-welcome','m5-results');
+}
+
+function renderM5SensChart(){
+  const r=lastResults.m5;if(!r)return;
+  const sa=r.sensitivity;
+  const names=sa.map(s=>s.name);
+  const base=sa.map(s=>s.baseline);
+  const plus=sa.map(s=>s.plus);
+  const minus=sa.map(s=>s.minus);
+  // Range lines + three marker series
+  const rangeTraces=names.map((name,i)=>({
+    x:[minus[i],plus[i]],y:[name,name],type:'scatter',mode:'lines',showlegend:false,
+    line:{color:'#CDD4DE',width:3},hoverinfo:'skip',
+  }));
+  plt('m5-chart2',[
+    ...rangeTraces,
+    {x:base,y:names,type:'scatter',mode:'markers',name:'Baseline',
+     marker:{symbol:'diamond',size:11,color:'#1578BE',line:{color:'#fff',width:1}}},
+    {x:plus,y:names,type:'scatter',mode:'markers',name:`+${r.delta}% rate`,
+     marker:{symbol:'triangle-right',size:11,color:'#C0392B',line:{color:'#fff',width:1}}},
+    {x:minus,y:names,type:'scatter',mode:'markers',name:`−${r.delta}% rate`,
+     marker:{symbol:'triangle-left',size:11,color:'#198754',line:{color:'#fff',width:1}}},
+  ],{
+    title:`Sensitivity Analysis (±${r.delta}% defect rate shift)`,
+    xaxis:{title:'P(Lot Rejected)'},yaxis:{title:''},
+    height:Math.max(260,sa.length*56+140),
+  });
+}
+
+function m5Export(){
+  const r=lastResults.m5;if(!r)return;
+  const rows=[
+    ['metric','value'],
+    ['P(Lot Rejected)',r.overallRejProb],
+    ['P(Lot Accepted)',1-r.overallRejProb],
+    ['CI_95_lower',r.ci95[0]],
+    ['CI_95_upper',r.ci95[1]],
+    ['lot_size',r.lotSize],
+    ['rejection_mode',r.rejMode],
+    ['iterations',r.nIter],
+    [''],
+    ['defect','x_observed','n_sample','posterior_mean','threshold_c','p_defect_rejects'],
+    ...r.defects.map((d,i)=>[d.name,d.x,d.n,((d.x+1)/(d.n+2)).toFixed(6),d.c,r.rejByDefect[i].prob.toFixed(6)]),
+    [''],
+    ['defect','p_reject_baseline','p_reject_plus_delta','p_reject_minus_delta','sensitivity_delta_pct'],
+    ...r.sensitivity.map(s=>[s.name,s.baseline.toFixed(6),s.plus.toFixed(6),s.minus.toFixed(6),s.delta]),
+  ];
+  downloadCSV(rows,'lot_rejection_analysis.csv');
+}
+
+// ═══════════════════════════════════════════════════
 // SCENARIO COMPARISON
 // ═══════════════════════════════════════════════════
 function refreshComparePanel(){
@@ -1199,6 +1510,7 @@ m2RenderEditor();
 m3RebuildDeps();
 m3RenderEditor();
 m4RenderEditor();
+m5RenderEditor();
 </script>
 </body>
 </html>
